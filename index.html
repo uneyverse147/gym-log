@@ -457,7 +457,7 @@ body.chart-open { padding-bottom: 32px; }
           <button type="button" class="menu-item" id="m-import">Daten importieren</button>
           <button type="button" class="menu-item" id="m-export">Backup herunterladen</button>
           <button type="button" class="menu-item danger" id="m-logout">Abmelden</button>
-          <div class="menu-ver">Version 11 · 13.11.2026</div>
+          <div class="menu-ver">Version 12 · 13.11.2026</div>
         </div>
       </details>
       <input type="file" id="import-file" accept="application/json,.json" hidden>
@@ -1192,12 +1192,30 @@ body.chart-open { padding-bottom: 32px; }
       });
     } catch (e) {}
   }
+  // While the pause runs and the app is in the background, keep a quiet notification with the end time.
+  // Android shows the time left next to it ("in 2 Min.") and the notification is replaced by "Pause vorbei" at the end.
+  function pauseNote(force) {
+    try {
+      if (!document.hidden || !timer.endAt || !("Notification" in window) || Notification.permission !== "granted" || !navigator.serviceWorker) return;
+      var now = Date.now(); if (!force && now - pauseNote.last < 10000) return; pauseNote.last = now;
+      var end = new Date(timer.endAt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      var left = fmtT(Math.max(0, Math.ceil((timer.endAt - now) / 1000)));
+      navigator.serviceWorker.ready.then(function (r) {
+        r.showNotification("Pause läuft · noch " + left, { body: "Weiter um " + end + (timer.label ? " · " + timer.label : ""), icon: "icons/icon-192.png", badge: "icons/icon-192.png", tag: "gymlog-timer", silent: true, renotify: false, timestamp: timer.endAt });
+      });
+    } catch (e) {}
+  }
+  pauseNote.last = 0;
+  function clearPauseNote() {
+    try { if (navigator.serviceWorker) navigator.serviceWorker.ready.then(function (r) { r.getNotifications({ tag: "gymlog-timer" }).then(function (ns) { ns.forEach(function (n) { if (n.title.indexOf("Pause läuft") === 0) n.close(); }); }); }); } catch (e) {}
+  }
+  document.addEventListener("visibilitychange", function () { if (document.hidden) pauseNote(true); else clearPauseNote(); });
   function startTimer(sec, label) { ensureAudio(); askNotify(); timer = { endAt: Date.now() + sec * 1000, total: sec, label: label || "", doneAt: 0 }; lsSet("gymlog.timer", timer); tickTimer(); }
-  function stopTimer() { timer.endAt = 0; timer.doneAt = 0; lsSet("gymlog.timer", timer); tickTimer(); }
+  function stopTimer() { clearPauseNote(); timer.endAt = 0; timer.doneAt = 0; lsSet("gymlog.timer", timer); tickTimer(); }
   function tickTimer() {
     var now = Date.now(), status, rem;
     if (timer.endAt && timer.endAt <= now) { var late = now - timer.endAt; timer.endAt = 0; timer.doneAt = now; lsSet("gymlog.timer", timer); if (late < 3000) { beep(); notifyDone(); } }
-    if (timer.endAt) { status = "running"; rem = Math.ceil((timer.endAt - now) / 1000); }
+    if (timer.endAt) { status = "running"; rem = Math.ceil((timer.endAt - now) / 1000); pauseNote(false); }
     else if (timer.doneAt && now - timer.doneAt < 8000) { status = "done"; rem = 0; }
     else { status = "idle"; rem = timerBase; }
     if (status !== tStatus) {
@@ -1235,7 +1253,11 @@ body.chart-open { padding-bottom: 32px; }
   function adjustTimer(d) {
     if (timer.endAt) {
       if (d < 0 && timer.endAt - Date.now() <= 16000) return;
-      timer.endAt += d * 1000; timer.total = Math.max(15, timer.total + d); lsSet("gymlog.timer", timer);
+      // The bar is measured against a fixed pause length: −15 s visibly shortens the bar, +15 s refills it
+      // (and only stretches the scale when the rest would no longer fit), so it always runs at the same speed.
+      timer.endAt += d * 1000;
+      if (d > 0) timer.total = Math.max(timer.total, Math.ceil((timer.endAt - Date.now()) / 1000));
+      lsSet("gymlog.timer", timer); pauseNote.last = 0;
     } else { timerBase = Math.max(15, Math.min(900, timerBase + d)); lsSet("gymlog.timerBase", timerBase); }
     tickTimer();
   }
