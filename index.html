@@ -370,7 +370,7 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
         </div>
         <div class="field"><label for="p-start">Start</label><input type="date" id="p-start" required></div>
         <div class="field"><label for="p-end">Ende</label><input type="date" id="p-end" required></div>
-        <div class="field"><label for="p-target">Zielgewicht (kg)</label><input type="number" id="p-target" step="0.1" min="20" max="300" inputmode="decimal" placeholder="optional"></div>
+        <div class="field"><label for="p-target">Zielgewicht (kg)</label><input type="text" id="p-target" inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="optional"></div>
         <div style="display:flex;gap:8px;grid-column:1/-1;flex-wrap:wrap">
           <button type="submit" class="btn-primary">Phase speichern</button>
           <button type="button" class="btn-dark" id="phase-cancel">Abbrechen</button>
@@ -387,7 +387,7 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
       <div id="bw-view"></div>
       <div id="bw-chart" hidden></div>
       <form class="row" id="bw-form">
-        <div class="field" style="flex:1 1 120px"><label for="bw-kg">Gewicht heute (kg)</label><input type="number" id="bw-kg" step="0.1" min="20" max="300" inputmode="decimal" required placeholder="80,0"></div>
+        <div class="field" style="flex:1 1 120px"><label for="bw-kg">Gewicht heute (kg)</label><input type="text" id="bw-kg" inputmode="decimal" autocomplete="off" enterkeyhint="done" required placeholder="80,0"></div>
         <span class="today-tag">speichert automatisch</span>
       </form>
       <details id="bw-history">
@@ -395,7 +395,7 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
         <form class="row sub-form" id="bw-past-form">
           <div class="sub-form-title">Früheren Tag nachtragen</div>
           <div class="field" style="flex:1 1 130px"><label for="bw-past-date">Datum</label><input type="date" id="bw-past-date" required></div>
-          <div class="field" style="flex:1 1 90px"><label for="bw-past-kg">kg</label><input type="number" id="bw-past-kg" step="0.1" min="20" max="300" inputmode="decimal" required placeholder="80,0"></div>
+          <div class="field" style="flex:1 1 90px"><label for="bw-past-kg">kg</label><input type="text" id="bw-past-kg" inputmode="decimal" autocomplete="off" enterkeyhint="done" required placeholder="80,0"></div>
           <span class="today-tag">speichert automatisch</span>
         </form>
         <div class="scroll" id="bw-table" style="margin-top:8px"></div>
@@ -449,7 +449,7 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
       <div class="ms-list" id="ms-list"></div>
       <form class="row" id="ms-form">
         <div class="field" style="flex:1 1 140px"><label for="ms-date">Datum</label><input type="date" id="ms-date" required></div>
-        <div class="field" style="flex:1 1 100px"><label for="ms-kg-in">Zielgewicht (kg)</label><input type="number" id="ms-kg-in" step="0.1" min="20" max="300" inputmode="decimal" required placeholder="80,0"></div>
+        <div class="field" style="flex:1 1 100px"><label for="ms-kg-in">Zielgewicht (kg)</label><input type="text" id="ms-kg-in" inputmode="decimal" autocomplete="off" enterkeyhint="done" required placeholder="80,0"></div>
         <button type="submit" class="btn-dark">+ Ziel hinzufügen</button>
       </form>
     </div>
@@ -792,18 +792,18 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
     var gs = groupsOf(ex);
     var body = '<div class="ex-body">' +
       '<form class="row" data-lift-form="' + esc(ex.id) + '">' +
-      '<div class="field" style="flex:1 1 90px"><label for="lift-w">Gewicht (kg)</label><input type="number" id="lift-w" step="0.25" min="0" max="600" inputmode="decimal" required placeholder="' + (last ? kg(last.top, 0) : "60") + '"></div>' +
-      '<div class="field" style="flex:1 1 60px"><label for="lift-r">Wdh.</label><input type="number" id="lift-r" step="1" min="1" max="100" inputmode="numeric" required placeholder="8"></div>' +
-      '<div class="field" style="flex:1 1 60px"><label for="lift-s">Sätze</label><input type="number" id="lift-s" step="1" min="1" max="20" inputmode="numeric" placeholder="3"></div>' +
+      '<div class="field" style="flex:1 1 90px"><label for="lift-w">Gewicht (kg)</label><input type="text" id="lift-w" inputmode="decimal" autocomplete="off" enterkeyhint="next" required placeholder="' + (last ? kg(last.top, 0) : "60") + '"></div>' +
+      '<div class="field" style="flex:1 1 60px"><label for="lift-r">Wdh.</label><input type="number" id="lift-r" enterkeyhint="next" step="1" min="1" max="100" inputmode="numeric" required placeholder="8"></div>' +
+      '<div class="field" style="flex:1 1 60px"><label for="lift-s">Sätze</label><input type="number" id="lift-s" enterkeyhint="done" step="1" min="1" max="20" inputmode="numeric" placeholder="3"></div>' +
       '<span class="today-tag">für <b>heute, ' + fmtShort(today) + "</b> · speichert automatisch</span></form>" +
       (ss.length ? '<div class="stats">' + stat(kg(bestEver), "bestes e1RM (kg)") + stat(ss.length, "Trainings") +
         (ss.length >= 2 ? stat(signed(last.top - ss[0].top), "kg seit " + fmtShort(ss[0].date), last.top - ss[0].top >= 0 ? "g" : "o") : "") + "</div>" : "") +
       '<details data-details="' + esc(ex.id) + '"' + (ui.exDetails[ex.id] ? " open" : "") + "><summary>Alle Einträge (" + count + ")</summary>" +
       '<form class="row sub-form" data-past-lift-form="' + esc(ex.id) + '"><div class="sub-form-title">Früheren Tag nachtragen</div>' +
       '<div class="field" style="flex:1 1 130px"><label for="past-date">Datum</label><input type="date" id="past-date" required max="' + isoOffset(-1) + '"></div>' +
-      '<div class="field" style="flex:1 1 80px"><label for="past-w">Gewicht (kg)</label><input type="number" id="past-w" step="0.25" min="0" max="600" inputmode="decimal" required></div>' +
-      '<div class="field" style="flex:1 1 60px"><label for="past-r">Wdh.</label><input type="number" id="past-r" step="1" min="1" max="100" inputmode="numeric" required></div>' +
-      '<div class="field" style="flex:1 1 60px"><label for="past-s">Sätze</label><input type="number" id="past-s" step="1" min="1" max="20" inputmode="numeric" placeholder="1"></div>' +
+      '<div class="field" style="flex:1 1 80px"><label for="past-w">Gewicht (kg)</label><input type="text" id="past-w" inputmode="decimal" autocomplete="off" enterkeyhint="next" required></div>' +
+      '<div class="field" style="flex:1 1 60px"><label for="past-r">Wdh.</label><input type="number" id="past-r" enterkeyhint="next" step="1" min="1" max="100" inputmode="numeric" required></div>' +
+      '<div class="field" style="flex:1 1 60px"><label for="past-s">Sätze</label><input type="number" id="past-s" enterkeyhint="done" step="1" min="1" max="20" inputmode="numeric" placeholder="1"></div>' +
       '<span class="today-tag">speichert automatisch</span></form>' +
       (hist ? '<div class="scroll" style="margin-top:8px"><table class="hist"><thead><tr><th>Datum</th><th class="r">Gewicht</th><th class="r">Wdh.</th><th class="r">Sätze</th><th class="r">e1RM</th><th></th></tr></thead><tbody>' + hist + "</tbody></table></div>" : '<div class="empty">Noch kein Eintrag für diese Übung.</div>') +
       "</details>" +
@@ -1167,7 +1167,7 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
   $("phase-form").addEventListener("submit", function (e) {
     e.preventDefault();
     var type = (document.querySelector('input[name="ptype"]:checked') || {}).value || "cut";
-    var start = $("p-start").value, end = $("p-end").value, target = parseFloat($("p-target").value);
+    var start = $("p-start").value, end = $("p-end").value, target = num($("p-target").value);
     if (!start || !end || end <= start) { toast("Das Ende muss nach dem Start liegen."); return; }
     var data = { type: type, start: start, end: end, updatedAt: Date.now() };
     if (!isNaN(target)) data.target = target;
@@ -1295,7 +1295,7 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
 
   // ---------- auto-save: entries are saved when you leave the form, scroll, or press Enter ----------
   function isEntryForm(f) { return !!f && (f.id === "bw-form" || f.id === "bw-past-form" || f.hasAttribute("data-lift-form") || f.hasAttribute("data-past-lift-form")); }
-  function numInputs(f) { return Array.prototype.slice.call(f.querySelectorAll('input[type="number"]')); }
+  function numInputs(f) { return Array.prototype.slice.call(f.querySelectorAll('input:not([type="date"])')); }
   function hasValue(f) { return numInputs(f).some(function (i) { return i.value.trim() !== ""; }); }
   function isComplete(f) {
     if (f.id === "bw-form" || f.id === "bw-past-form") return numInputs(f)[0].value.trim() !== "";
@@ -1335,6 +1335,23 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
     touchY = null; leaveIfComplete();
   }, { passive: true });
   document.addEventListener("wheel", leaveIfComplete, { passive: true });
+  // Tapping anywhere outside the current entry form ends the input (mobile browsers keep the field active otherwise).
+  document.addEventListener("pointerdown", function (e) {
+    var a = document.activeElement;
+    if (!a || a.tagName !== "INPUT" || !isEntryForm(a.form)) return;
+    if (a.form.contains(e.target)) return;
+    if (e.target.closest && e.target.closest("input, select, textarea, label")) return;
+    a.blur();
+  }, true);
+  // Closing the phone keyboard (back gesture) leaves the field focused: treat that as "done".
+  if (window.visualViewport) {
+    var vvH = window.visualViewport.height;
+    window.visualViewport.addEventListener("resize", function () {
+      var h = window.visualViewport.height, grew = h - vvH > 120;
+      vvH = h;
+      if (grew) leaveIfComplete();
+    });
+  }
 
   function write(fn, okMsg, hot) {
     if (!backend) { toast("Speicher ist noch nicht bereit."); return; }
