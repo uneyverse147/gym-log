@@ -306,9 +306,12 @@ input[type="file"] { padding: 8px; font-size: 13px; }
 .rot-chip { border: 1px solid var(--line-strong); border-radius: 14px; padding: 10px 10px; display: flex; flex-direction: column; gap: 3px; min-width: 0; background: rgba(255,255,255,0.02); }
 .rot-chip b { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rot-chip span { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+button.rot-chip { font: inherit; color: var(--fg); text-align: left; cursor: pointer; align-items: flex-start; }
+button.rot-chip:active { transform: scale(0.98); }
+.rot-chip.today { border-color: var(--accent); background: rgba(46,229,157,0.12); box-shadow: 0 0 0 1px var(--accent), 0 0 22px -8px var(--accent-glow); }
+.rot-chip.today b { color: var(--accent-2); }
 .rot-chip.next { border-color: rgba(46,229,157,0.55); background: rgba(46,229,157,0.06); box-shadow: 0 0 22px -10px var(--accent-glow); }
 .rot-chip.next b { color: var(--accent-2); }
-.rot-chip.today { border-style: dashed; }
 .rot-note { font-size: 12px; color: var(--faint); margin-top: 10px; }
 .ph-head-r { display: flex; align-items: center; gap: 10px; }
 .ph-hint { font-size: 13px; color: var(--accent-2); margin: -4px 0 12px; }
@@ -495,7 +498,7 @@ body.chart-open { padding-bottom: 32px; }
           <button type="button" class="menu-item" id="m-import">Daten importieren</button>
           <button type="button" class="menu-item" id="m-export">Backup herunterladen</button>
           <button type="button" class="menu-item danger" id="m-logout">Abmelden</button>
-          <div class="menu-ver">Version 17 · 13.11.2026</div>
+          <div class="menu-ver">Version 18 · 13.11.2026</div>
         </div>
       </details>
       <input type="file" id="import-file" accept="application/json,.json" hidden>
@@ -687,7 +690,7 @@ body.chart-open { padding-bottom: 32px; }
 (function () {
   "use strict";
   var DAY = 86400000;
-  var state = { exercises: [], lifts: [], bw: [], milestones: [], photos: [], phase: null };
+  var state = { exercises: [], lifts: [], bw: [], milestones: [], photos: [], phase: null, rot: [] };
   function lsGet(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   var ui = { open: null, editingPhase: false, exDetails: {}, groupOpen: lsGet("gymlog.groups") || {}, msOpen: lsGet("gymlog.msOpen") !== false, timerVisible: true };
@@ -973,41 +976,34 @@ body.chart-open { padding-bottom: 32px; }
   }
 
   // ---------- start rotation: which muscle each Push/Pull day begins with ----------
-  // A day's start = the first exercise you logged that day (by entry time) that belongs to a rotation slot.
-  // Next = the slot started least often in the recent window (2 rounds), ties go to the one started longest ago.
+  // You tap what you start with today; it is saved per day. Next = the slot started least often in the
+  // recent window (2 rounds), ties go to the one started longest ago.
   var ROTATION = {
     push: [
-      { key: "brust", name: "Brust", re: /brust|butterfly|bankdr|chest|\bfly/i },
-      { key: "trizeps", name: "Trizeps", re: /trizeps|triceps|dips|pushdown/i },
-      { key: "schulter", name: "Schulter", re: /seitheben|schulter|shoulder|lateral|overhead/i }
+      { key: "brust", name: "Brust" },
+      { key: "trizeps", name: "Trizeps" },
+      { key: "schulter", name: "Schulter" }
     ],
     pull: [
-      { key: "breit", name: "Breites Rudern", re: /breit/i },
-      { key: "rudern", name: "Rudern", re: /rudern|\brow/i },
-      { key: "latzug", name: "Latzug", re: /latzug|pull ?down|klimm/i },
-      { key: "bizeps", name: "Bizeps", re: /bizeps|biceps|curl|preacher|hammer/i }
+      { key: "breit", name: "Breites Rudern" },
+      { key: "rudern", name: "Rudern" },
+      { key: "latzug", name: "Latzug" },
+      { key: "bizeps", name: "Bizeps" }
     ]
   };
-  function slotOf(g, ex) { var sl = ROTATION[g]; for (var i = 0; i < sl.length; i++) if (sl[i].re.test(ex.name)) return sl[i].key; return null; }
   function rotationFor(g) {
-    var slots = ROTATION[g], exSlot = {};
-    state.exercises.forEach(function (ex) { if (groupsOf(ex).indexOf(g) >= 0) { var k = slotOf(g, ex); if (k) exSlot[ex.id] = k; } });
-    var firstBy = {};
-    state.lifts.forEach(function (l) {
-      var k = exSlot[l.exerciseId]; if (!k) return;
-      var f = firstBy[l.date];
-      if (!f || (l.createdAt || 0) < f.at) firstBy[l.date] = { date: l.date, slot: k, at: l.createdAt || 0 };
-    });
-    var starts = Object.keys(firstBy).sort().map(function (d) { return firstBy[d]; });
+    var slots = ROTATION[g], today = todayISO();
+    var starts = state.rot.filter(function (r) { return r.group === g && slots.some(function (sl) { return sl.key === r.slot; }); })
+      .sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
     var win = starts.slice(-slots.length * 2), info = {};
     slots.forEach(function (sl, i) { info[sl.key] = { key: sl.key, name: sl.name, idx: i, count: 0, last: "" }; });
     win.forEach(function (st) { info[st.slot].count++; });
     starts.forEach(function (st) { info[st.slot].last = st.date; });
-    var today = todayISO(), todayStart = firstBy[today] ? firstBy[today].slot : null;
+    var todayStart = null; starts.forEach(function (st) { if (st.date === today) todayStart = st.slot; });
     var ranked = slots.map(function (sl) { return info[sl.key]; }).sort(function (a, b) {
-      return a.count - b.count || (a.last || "") .localeCompare(b.last || "") || a.idx - b.idx;
+      return a.count - b.count || (a.last || "").localeCompare(b.last || "") || a.idx - b.idx;
     });
-    return { slots: slots.map(function (sl) { return info[sl.key]; }), next: ranked[0].key, today: todayStart, rounds: win.length };
+    return { slots: slots.map(function (sl) { return info[sl.key]; }), next: ranked[0].key, today: todayStart };
   }
   function agoText(d) {
     if (!d) return "noch nie";
@@ -1015,17 +1011,26 @@ body.chart-open { padding-bottom: 32px; }
     return n === 0 ? "heute" : n === 1 ? "gestern" : "vor " + n + " T.";
   }
   function renderRotation() {
-    if (!changed("rot", [state.lifts, state.exercises, todayISO()])) return;
+    if (!changed("rot", [state.rot, todayISO()])) return;
     $("rot-view").innerHTML = ["push", "pull"].map(function (g) {
       var G = GROUPS.filter(function (x) { return x.key === g; })[0], r = rotationFor(g), nx = r.slots.filter(function (x) { return x.key === r.next; })[0];
       return '<div class="rot-group"><div class="rot-top">' +
         '<span class="gdot" style="background:' + G.color + ";box-shadow:0 0 10px " + G.color + '"></span><span class="group-name">' + G.name.toUpperCase() + "</span>" +
         '<span class="rot-next">' + (r.today ? "Heute: " + esc(r.slots.filter(function (x) { return x.key === r.today; })[0].name) + " · danach " : "Als Nächstes ") + "<b>" + esc(nx.name) + "</b></span></div>" +
         '<div class="rot-chips n' + r.slots.length + '">' + r.slots.map(function (sl) {
-          return '<div class="rot-chip' + (sl.key === r.next ? " next" : "") + (sl.key === r.today ? " today" : "") + '"><b>' + esc(sl.name) + "</b><span>" + sl.count + "× · " + agoText(sl.last) + "</span></div>";
+          var isT = sl.key === r.today;
+          return '<button type="button" class="rot-chip' + (sl.key === r.next ? " next" : "") + (isT ? " today" : "") + '" data-rot="' + g + "|" + sl.key + '" aria-pressed="' + isT + '"><b>' + (isT ? "✓ " : "") + esc(sl.name) + "</b><span>" + (isT ? "Heute gestartet" : sl.count + "× · " + agoText(sl.last)) + "</span></button>";
         }).join("") + "</div></div>";
-    }).join("") + '<div class="rot-note">Erkannt an der ersten Übung, die du an einem Push- oder Pull-Tag einträgst. Dran ist, womit du zuletzt am seltensten angefangen hast. Bei Gleichstand gewinnt, was am längsten her ist.</div>';
+    }).join("") + '<div class="rot-note">Tipp an, womit du heute anfängst. Nochmal tippen nimmt es zurück. Dran ist, womit du zuletzt am seltensten angefangen hast. Bei Gleichstand gewinnt, was am längsten her ist.</div>';
   }
+  $("rot-view").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-rot]"); if (!b || !backend) return;
+    var parts = b.dataset.rot.split("|"), g = parts[0], slot = parts[1], today = todayISO(), id = "rot:" + g + ":" + today;
+    var cur = state.rot.filter(function (r) { return r.id === id; })[0];
+    var name = ROTATION[g].filter(function (x) { return x.key === slot; })[0].name;
+    if (cur && cur.slot === slot) write(function () { return backend.remove("phase", id); }, "Start von heute zurückgenommen");
+    else write(function () { return backend.put("phase", id, { group: g, slot: slot, date: today, createdAt: Date.now() }); }, groupName(g) + " heute mit " + name + " gestartet");
+  });
   function rotationHint(g) {
     if (!ROTATION[g]) return "";
     var r = rotationFor(g), nx = r.slots.filter(function (x) { return x.key === (r.today || r.next); })[0];
@@ -1033,7 +1038,7 @@ body.chart-open { padding-bottom: 32px; }
   }
 
   function renderExercises() {
-    if (!changed("ex", [state.exercises, state.lifts, ui.open, ui.groupOpen, todayISO()])) return;
+    if (!changed("ex", [state.exercises, state.lifts, state.rot, ui.open, ui.groupOpen, todayISO()])) return;
     var list = $("ex-list");
     var act = document.activeElement;
     if ((act && act.tagName === "INPUT" && list.contains(act)) || pointerDown) { renderExercises.pending = true; sig.ex = null; return; }
@@ -1769,6 +1774,8 @@ body.chart-open { padding-bottom: 32px; }
     function arr(o) { return Object.keys(o || {}).map(function (k) { return Object.assign({ id: k }, o[k]); }); }
     state.exercises = arr(mem.exercises); state.lifts = arr(mem.lifts); state.bw = arr(mem.bodyweight);
     state.milestones = arr(mem.milestones); state.photos = arr(mem.photos); state.phase = (mem.phase && mem.phase.current) || null;
+    // start-rotation picks live next to the phase as "rot:<group>:<date>" docs
+    state.rot = Object.keys(mem.phase || {}).filter(function (k) { return k.indexOf("rot:") === 0; }).map(function (k) { return Object.assign({ id: k }, mem.phase[k]); });
     if (userId) lsSet(CACHE, { uid: userId, mem: mem });
     render();
   }
@@ -1895,6 +1902,7 @@ body.chart-open { padding-bottom: 32px; }
         (d[c] || []).forEach(function (x) { var data = Object.assign({}, x); delete data.id; rows.push({ user_id: userId, collection: c, id: String(x.id), data: data }); });
       });
       if (d.phase) rows.push({ user_id: userId, collection: "phase", id: "current", data: d.phase });
+      (d.rotation || []).forEach(function (r) { if (r && /^rot:/.test(r.id)) { var data = Object.assign({}, r); delete data.id; rows.push({ user_id: userId, collection: "phase", id: r.id, data: data }); } });
       var photos = d.photos || [], done = 0, total = rows.length + photos.length;
       function progress() { setStatus("Import " + Math.round(done / Math.max(1, total) * 100) + " %", false); }
       progress();
@@ -1926,6 +1934,7 @@ body.chart-open { padding-bottom: 32px; }
     var out = { format: "gymlog-export", version: 1, exportedAt: new Date().toISOString() };
     ["exercises", "lifts", "bodyweight", "milestones"].forEach(function (c) { out[c] = Object.keys(mem[c] || {}).map(function (id) { return Object.assign({ id: id }, mem[c][id]); }); });
     out.phase = (mem.phase && mem.phase.current) || null;
+    out.rotation = state.rot.map(function (r) { return Object.assign({}, r); });
     var photos = Object.keys(mem.photos || {}).map(function (id) { return Object.assign({ id: id }, mem.photos[id]); });
     toast("Backup wird erstellt …");
     var p = Promise.resolve(), list = [];
