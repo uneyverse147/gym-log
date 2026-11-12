@@ -1,4 +1,4 @@
-// Gym Log service worker: app shell offline, data always live from Supabase.
+// Alex Gym service worker: app shell offline, data always live from Supabase.
 const VERSION = "gymlog-v1";
 const SHELL = [
   "./", "./index.html", "./config.js", "./manifest.webmanifest",
