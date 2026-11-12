@@ -310,8 +310,7 @@ button.rot-chip { font: inherit; color: var(--fg); text-align: left; cursor: poi
 button.rot-chip:active { transform: scale(0.98); }
 .rot-chip.today { border-color: var(--accent); background: rgba(46,229,157,0.12); box-shadow: 0 0 0 1px var(--accent), 0 0 22px -8px var(--accent-glow); }
 .rot-chip.today b { color: var(--accent-2); }
-.rot-chip.next { border-color: rgba(46,229,157,0.55); background: rgba(46,229,157,0.06); box-shadow: 0 0 22px -10px var(--accent-glow); }
-.rot-chip.next b { color: var(--accent-2); }
+.rot-chip span.rot-up { color: var(--accent-2); font-weight: 500; }
 .rot-note { font-size: 12px; color: var(--faint); margin-top: 10px; }
 .ph-head-r { display: flex; align-items: center; gap: 10px; }
 .ph-hint { font-size: 13px; color: var(--accent-2); margin: -4px 0 12px; }
@@ -498,7 +497,7 @@ body.chart-open { padding-bottom: 32px; }
           <button type="button" class="menu-item" id="m-import">Daten importieren</button>
           <button type="button" class="menu-item" id="m-export">Backup herunterladen</button>
           <button type="button" class="menu-item danger" id="m-logout">Abmelden</button>
-          <div class="menu-ver">Version 18 · 13.11.2026</div>
+          <div class="menu-ver">Version 19 · 13.11.2026</div>
         </div>
       </details>
       <input type="file" id="import-file" accept="application/json,.json" hidden>
@@ -1019,7 +1018,7 @@ body.chart-open { padding-bottom: 32px; }
         '<span class="rot-next">' + (r.today ? "Heute: " + esc(r.slots.filter(function (x) { return x.key === r.today; })[0].name) + " · danach " : "Als Nächstes ") + "<b>" + esc(nx.name) + "</b></span></div>" +
         '<div class="rot-chips n' + r.slots.length + '">' + r.slots.map(function (sl) {
           var isT = sl.key === r.today;
-          return '<button type="button" class="rot-chip' + (sl.key === r.next ? " next" : "") + (isT ? " today" : "") + '" data-rot="' + g + "|" + sl.key + '" aria-pressed="' + isT + '"><b>' + (isT ? "✓ " : "") + esc(sl.name) + "</b><span>" + (isT ? "Heute gestartet" : sl.count + "× · " + agoText(sl.last)) + "</span></button>";
+          return '<button type="button" class="rot-chip' + (isT ? " today" : "") + '" data-rot="' + g + "|" + sl.key + '" aria-pressed="' + isT + '"><b>' + (isT ? "✓ " : "") + esc(sl.name) + "</b>" + (isT ? "<span>Heute gestartet</span>" : sl.key === r.next ? '<span class="rot-up">' + (r.today ? "Nächstes Mal" : "Als Nächstes") + "</span>" : "<span>" + sl.count + "× · " + agoText(sl.last) + "</span>") + "</button>";
         }).join("") + "</div></div>";
     }).join("") + '<div class="rot-note">Tipp an, womit du heute anfängst. Nochmal tippen nimmt es zurück. Dran ist, womit du zuletzt am seltensten angefangen hast. Bei Gleichstand gewinnt, was am längsten her ist.</div>';
   }
