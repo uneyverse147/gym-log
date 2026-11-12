@@ -797,7 +797,6 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
       '<div class="field" style="flex:1 1 60px"><label for="lift-s">Sätze</label><input type="number" id="lift-s" step="1" min="1" max="20" inputmode="numeric" placeholder="3"></div>' +
       '<button type="submit" class="btn-primary">+ Eintragen</button>' +
       '<span class="today-tag">für <b>heute, ' + fmtShort(today) + "</b></span></form>" +
-      '<div class="ex-pause"><button class="pill-btn good sm" type="button" data-timer="1" data-timer-ex="' + esc(ex.id) + '">▶ Pause starten</button></div>' +
       (ss.length ? '<div class="stats">' + stat(kg(bestEver), "bestes e1RM (kg)") + stat(ss.length, "Trainings") +
         (ss.length >= 2 ? stat(signed(last.top - ss[0].top), "kg seit " + fmtShort(ss[0].date), last.top - ss[0].top >= 0 ? "g" : "o") : "") + "</div>" : "") +
       '<details data-details="' + esc(ex.id) + '"' + (ui.exDetails[ex.id] ? " open" : "") + "><summary>Alle Einträge (" + count + ")</summary>" +
@@ -857,16 +856,11 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
       legend = '<span><i class="lg-line"></i>Körpergewicht</span>' + (marks.length ? '<span><i class="lg-dot"></i>Etappenziel</span>' : "") + (target ? '<span><i class="lg-dash"></i>Phasenziel</span>' : "");
     } else {
       var exId = ui.page.slice(3), ex = state.exercises.filter(function (x) { return x.id === exId; })[0];
-      $("cp-kicker").textContent = "Verlauf · Top-Gewicht pro Training"; $("cp-title").textContent = ex ? ex.name : "Übung";
+      $("cp-kicker").textContent = "Verlauf"; $("cp-title").textContent = ex ? ex.name : "Übung";
       if (!ex) chart = '<div class="empty">Diese Übung gibt es nicht mehr.</div>';
       else {
         var ss = sessionsFor(exId);
-        if (ss.length) {
-          var lt = ss[ss.length - 1], best = ss.reduce(function (m, x) { return Math.max(m, x.best); }, 0);
-          stats = stat(kg(lt.top), "kg zuletzt") + stat(kg(best), "bestes e1RM (kg)") + stat(ss.length, "Trainings");
-        }
         chart = historyChart(ss.map(function (x) { return { date: x.date, y: x.top }; }), { w: W, h: H, label: "Top-Gewicht nach Datum, " + ex.name, color: "var(--accent)" });
-        legend = '<span><i class="lg-line"></i>Top-Gewicht pro Trainingstag</span>';
       }
     }
     $("cp-stats").innerHTML = stats; $("cp-stats").hidden = !stats;
@@ -1140,7 +1134,19 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
     ui.page = null; applyPage();
     try { if (location.hash) location.hash = ""; } catch (e) {}
   });
-  var rz; window.addEventListener("resize", function () { clearTimeout(rz); rz = setTimeout(function () { sig.bw = sig.ex = sig.cp = null; render(); }, 150); });
+  // Re-render charts only when the width really changes. A phone keyboard only changes the height,
+  // and rebuilding the lists then would remove the input field the keyboard belongs to.
+  var rz, lastW = window.innerWidth;
+  window.addEventListener("resize", function () {
+    clearTimeout(rz);
+    rz = setTimeout(function () {
+      if (window.innerWidth === lastW) return;
+      lastW = window.innerWidth;
+      var a = document.activeElement;
+      if (a && (a.tagName === "INPUT" || a.tagName === "SELECT" || a.tagName === "TEXTAREA")) return;
+      sig.bw = sig.ex = sig.cp = null; render();
+    }, 150);
+  });
 
   // ---------- events ----------
   $("today").textContent = new Date().toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
