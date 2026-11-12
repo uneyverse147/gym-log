@@ -311,6 +311,10 @@ button.rot-chip:active { transform: scale(0.98); }
 .rot-chip.today { border-color: var(--accent); background: rgba(46,229,157,0.12); box-shadow: 0 0 0 1px var(--accent), 0 0 22px -8px var(--accent-glow); }
 .rot-chip.today b { color: var(--accent-2); }
 .rot-chip span.rot-up { color: var(--accent-2); font-weight: 500; }
+.rot-hist { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.rot-hist #rot-hist-body { margin-top: 10px; }
+.rot-hist form { margin-top: 12px; }
+.rot-hist select { width: 100%; }
 .rot-note { font-size: 12px; color: var(--faint); margin-top: 10px; }
 .ph-head-r { display: flex; align-items: center; gap: 10px; }
 .ph-hint { font-size: 13px; color: var(--accent-2); margin: -4px 0 12px; }
@@ -497,7 +501,7 @@ body.chart-open { padding-bottom: 32px; }
           <button type="button" class="menu-item" id="m-import">Daten importieren</button>
           <button type="button" class="menu-item" id="m-export">Backup herunterladen</button>
           <button type="button" class="menu-item danger" id="m-logout">Abmelden</button>
-          <div class="menu-ver">Version 19 · 13.11.2026</div>
+          <div class="menu-ver">Version 20 · 13.11.2026</div>
         </div>
       </details>
       <input type="file" id="import-file" accept="application/json,.json" hidden>
@@ -589,6 +593,15 @@ body.chart-open { padding-bottom: 32px; }
       <span class="sub" style="font-size:12px">Womit du anfängst</span>
     </div>
     <div id="rot-view"></div>
+    <details class="rot-hist" id="rot-hist">
+      <summary id="rot-hist-sum">Alle Einträge</summary>
+      <div id="rot-hist-body"></div>
+      <form class="row" id="rot-past">
+        <div class="field" style="flex:1 1 130px"><label for="rot-past-date">Datum</label><input type="date" id="rot-past-date" required></div>
+        <div class="field" style="flex:1 1 160px"><label for="rot-past-slot">Angefangen mit</label><select id="rot-past-slot" required></select></div>
+        <button type="submit" class="btn-dark">Nachtragen</button>
+      </form>
+    </details>
   </section>
 
   <!-- Lifts -->
@@ -1030,6 +1043,38 @@ body.chart-open { padding-bottom: 32px; }
     if (cur && cur.slot === slot) write(function () { return backend.remove("phase", id); }, "Start von heute zurückgenommen");
     else write(function () { return backend.put("phase", id, { group: g, slot: slot, date: today, createdAt: Date.now() }); }, groupName(g) + " heute mit " + name + " gestartet");
   });
+  function rotSlotName(g, k) { var x = (ROTATION[g] || []).filter(function (sl) { return sl.key === k; })[0]; return x ? x.name : k; }
+  function renderRotHistory() {
+    if (!changed("roth", [state.rot])) return;
+    var list = state.rot.slice().sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : a.group < b.group ? 1 : -1; });
+    $("rot-hist-sum").textContent = "Alle Einträge" + (list.length ? " (" + list.length + ")" : "");
+    $("rot-hist-body").innerHTML = list.length
+      ? '<table class="hist"><thead><tr><th>Datum</th><th>Gruppe</th><th>Start</th><th></th></tr></thead><tbody>' + list.map(function (r) {
+          var G = GROUPS.filter(function (x) { return x.key === r.group; })[0] || { name: r.group, color: "var(--muted)" };
+          return '<tr><td style="white-space:nowrap">' + fmtDate(r.date, { weekday: "short", day: "2-digit", month: "2-digit", year: "2-digit" }) + '</td><td style="white-space:nowrap"><span class="gdot" style="display:inline-block;margin-right:6px;background:' + G.color + '"></span>' + esc(G.name) + "</td><td>" + esc(rotSlotName(r.group, r.slot)) + '</td><td class="r"><button class="x" type="button" data-del-rot="' + esc(r.id) + '" aria-label="Eintrag vom ' + fmtNum(r.date) + ' löschen">×</button></td></tr>';
+        }).join("") + "</tbody></table>"
+      : '<div class="empty">Noch keine Einträge. Tipp oben an, womit du heute anfängst, oder trag frühere Tage hier unten nach.</div>';
+    if (!$("rot-past-slot").options.length) {
+      $("rot-past-slot").innerHTML = ["push", "pull"].map(function (g) {
+        return '<optgroup label="' + groupName(g) + '">' + ROTATION[g].map(function (sl) { return '<option value="' + g + "|" + sl.key + '">' + groupName(g) + " · " + esc(sl.name) + "</option>"; }).join("") + "</optgroup>";
+      }).join("");
+    }
+    $("rot-past-date").max = todayISO();
+    if (!$("rot-past-date").value) $("rot-past-date").value = isoOffset(-1);
+  }
+  $("rot-hist-body").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-del-rot]"); if (!b || !backend) return;
+    var id = b.dataset.delRot, r = state.rot.filter(function (x) { return x.id === id; })[0];
+    write(function () { return backend.remove("phase", id); }, "Eintrag vom " + (r ? fmtNum(r.date) : "") + " gelöscht");
+  });
+  $("rot-past").addEventListener("submit", function (e) {
+    e.preventDefault(); if (!backend) return;
+    var date = $("rot-past-date").value, parts = $("rot-past-slot").value.split("|"), g = parts[0], slot = parts[1];
+    if (!date || !g) return;
+    if (date > todayISO()) { toast("Das Datum liegt in der Zukunft."); return; }
+    var id = "rot:" + g + ":" + date, had = state.rot.some(function (x) { return x.id === id; });
+    write(function () { return backend.put("phase", id, { group: g, slot: slot, date: date, createdAt: Date.now() }); }, (had ? "Geändert: " : "Nachgetragen: ") + fmtNum(date) + " · " + groupName(g) + " mit " + rotSlotName(g, slot));
+  });
   function rotationHint(g) {
     if (!ROTATION[g]) return "";
     var r = rotationFor(g), nx = r.slots.filter(function (x) { return x.key === (r.today || r.next); })[0];
@@ -1317,7 +1362,7 @@ body.chart-open { padding-bottom: 32px; }
   document.body.setAttribute("data-tab", ui.tab);
   document.querySelectorAll("[data-tab-btn]").forEach(function (b) { if (b.dataset.tabBtn === ui.tab) b.setAttribute("aria-current", "page"); });
 
-  function render() { if (ui.page) renderChartPage(); else { renderReview(); renderRotation(); renderPhase(); renderBw(); renderExercises(); renderMilestones(); renderPhotos(); } }
+  function render() { if (ui.page) renderChartPage(); else { renderReview(); renderRotation(); renderRotHistory(); renderPhase(); renderBw(); renderExercises(); renderMilestones(); renderPhotos(); } }
 
   // ---------- rest timer ----------
   var timer = lsGet("gymlog.timer") || { endAt: 0, total: 210, label: "", doneAt: 0 };
