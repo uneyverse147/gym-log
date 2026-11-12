@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#070708">
+<meta name="theme-color" content="#131315">
 <meta name="description" content="Persönlicher Trainings-Tracker">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -324,6 +324,97 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
   .ex-spark { display: none; }
 }
 @media (prefers-reduced-motion: no-preference) { .bar > i { transition: width 0.5s ease; } }
+
+/* ===================== Theme: Dark Glow (calm charcoal, dot matrix, single mint accent) ===================== */
+@property --gl { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+:root {
+  --bg: #131315; --bg-glow: #1C1C1F; --surface: #19191C; --surface-2: #1F1F23;
+  --fg: #F1F2F1; --muted: #8A8C91; --faint: #55575C;
+  --line: rgba(255,255,255,0.065); --line-strong: rgba(255,255,255,0.11);
+  --accent: #2EE59D; --accent-2: #7BF5C4; --accent-glow: rgba(46,229,157,0.42); --accent-soft: rgba(46,229,157,0.10);
+  --good: #2EE59D; --good-glow: rgba(46,229,157,0.42); --good-soft: rgba(46,229,157,0.10);
+  --bulk: #2EE59D; --bulk-glow: rgba(46,229,157,0.40);
+  --warn: #FF8A5C;
+}
+html { background: var(--bg); }
+body { background: transparent; }
+body::after {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background-image: radial-gradient(rgba(255,255,255,0.10) 1px, transparent 1.4px);
+  background-size: 11px 11px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 55% at 15% 8%, #000 0%, transparent 70%), radial-gradient(ellipse 60% 50% at 95% 85%, #000 0%, transparent 70%);
+          mask-image: radial-gradient(ellipse 70% 55% at 15% 8%, #000 0%, transparent 70%), radial-gradient(ellipse 60% 50% at 95% 85%, #000 0%, transparent 70%);
+}
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 24px 48px -28px rgba(0,0,0,0.85); }
+.card.glow-cut::before, .card.glow-bulk::before { display: none; }
+.logo { background: #151517; border: 1px solid rgba(46,229,157,0.35); box-shadow: 0 0 18px -4px var(--accent-glow); }
+.logo svg rect { fill: var(--accent); }
+.status i { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+.status.warn i { background: var(--warn); box-shadow: 0 0 8px rgba(255,138,92,0.5); }
+
+/* glowing border that travels around primary actions */
+.btn-primary, .pill-btn.good {
+  color: var(--accent-2); text-shadow: none;
+  background: linear-gradient(#151517, #151517) padding-box,
+              conic-gradient(from var(--gl), rgba(46,229,157,0.10) 0deg, rgba(46,229,157,0.10) 210deg, #2EE59D 300deg, #D6FFEE 330deg, rgba(46,229,157,0.10) 360deg) border-box;
+  border: 1.5px solid transparent;
+  box-shadow: 0 0 26px -10px var(--accent-glow);
+  animation: glspin 3.6s linear infinite;
+}
+.btn-primary:hover, .pill-btn.good:hover:not(:disabled) { box-shadow: 0 0 30px -6px var(--accent-glow); }
+@keyframes glspin { to { --gl: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .btn-primary, .pill-btn.good { animation: none; } }
+.pill-btn.red { background: rgba(255,90,90,0.08); }
+
+/* accents that were orange */
+input:focus { border-color: rgba(46,229,157,0.55); box-shadow: 0 0 0 3px rgba(46,229,157,0.12), 0 0 18px -8px var(--accent-glow); }
+.pill.bad { color: var(--warn); background: rgba(255,138,92,0.10); border-color: rgba(255,138,92,0.3); text-shadow: none; }
+.o { color: var(--warn); text-shadow: none; }
+.chip.cut { color: var(--accent-2); border-color: rgba(46,229,157,0.4); box-shadow: 0 0 16px -6px var(--accent-glow); }
+.chip.cut i { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.bar.cut > i, .bar.t-bar > i { background: linear-gradient(90deg, #0E7A50, var(--accent)); box-shadow: 0 0 12px var(--accent-glow); }
+.gchip[aria-pressed="true"], .btn-dark[aria-pressed="true"] { color: var(--accent-2); border-color: rgba(46,229,157,0.45); box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 0 14px -6px var(--accent-glow); }
+.ms.next { border-color: rgba(46,229,157,0.4); background: rgba(46,229,157,0.045); box-shadow: 0 0 24px -12px var(--accent-glow); }
+.t-float { border-color: rgba(46,229,157,0.45); box-shadow: 0 0 26px -8px var(--accent-glow), 0 14px 30px rgba(0,0,0,0.6); }
+.t-float-dot { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+.toast.hot { border-color: rgba(46,229,157,0.5); box-shadow: 0 0 24px -6px var(--accent-glow), 0 12px 32px rgba(0,0,0,0.6); }
+.review { border-color: rgba(46,229,157,0.28); }
+.review::before { background: radial-gradient(closest-side, rgba(46,229,157,0.10), transparent); }
+.rv-big { color: var(--accent-2); text-shadow: 0 0 18px var(--accent-glow); }
+.login { background: var(--bg); }
+.btn-dark { background: #1C1C1F; box-shadow: none; }
+
+/* calmer exercise list: rows with dividers instead of cards in cards */
+.group-head { background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; box-shadow: none; padding: 14px 4px; }
+.group-head:hover { border-color: var(--line-strong); }
+.group-name { font-size: 15px; font-weight: 600; letter-spacing: 0.1em; }
+.gdot { width: 8px; height: 8px; }
+.group-items { margin-left: 0; padding-left: 0; border-left: 0; gap: 0; }
+.ex { background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
+.ex.open { background: rgba(255,255,255,0.025); border: 1px solid var(--line); border-radius: 16px; margin: 8px 0; }
+.ex-icon { display: none; }
+.ex-toggle { grid-template-columns: minmax(0, 1fr) 100px auto; padding: 14px 4px; }
+.ex.open .ex-toggle { padding: 14px 12px; }
+.ex-top { font-size: 18px; }
+
+/* muscle hologram hero */
+.hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: center; gap: 8px; padding: 8px 22px 8px 8px; overflow: hidden; }
+.hero-canvas { position: relative; height: 360px; }
+.hero-canvas::before { content: ""; position: absolute; inset: 10% 15%; background: radial-gradient(closest-side, rgba(46,229,157,0.10), transparent); pointer-events: none; }
+.hero-canvas canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: pan-y; }
+.hero-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.hero-count { display: flex; align-items: baseline; gap: 8px; }
+.hero-count b { font-family: var(--font-display); font-size: 52px; font-weight: 600; line-height: 1; letter-spacing: -0.03em; }
+.hero-count span { color: var(--muted); font-size: 13px; }
+.hero-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.mchip { font-size: 12px; font-weight: 500; padding: 5px 11px; border-radius: 999px; color: var(--accent-2); border: 1px solid rgba(46,229,157,0.32); background: rgba(46,229,157,0.07); }
+.mchip.off { color: var(--faint); border-color: var(--line); background: transparent; }
+.hero-hint { font-size: 12px; color: var(--faint); }
+@media (max-width: 520px) {
+  .hero { grid-template-columns: 1fr; padding: 4px 18px 18px; }
+  .hero-canvas { height: 320px; margin: 0 -14px; }
+  .ex-toggle { grid-template-columns: minmax(0, 1fr) auto; }
+}
 </style>
 </head>
 <body>
@@ -345,7 +436,7 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
           <button type="button" class="menu-item" id="m-import">Daten importieren</button>
           <button type="button" class="menu-item" id="m-export">Backup herunterladen</button>
           <button type="button" class="menu-item danger" id="m-logout">Abmelden</button>
-          <div class="menu-ver">Version 7 · 12.11.2026</div>
+          <div class="menu-ver">Version 8 · 13.11.2026</div>
         </div>
       </details>
       <input type="file" id="import-file" accept="application/json,.json" hidden>
@@ -353,6 +444,16 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
   </header>
 
   <section class="card review" id="review" hidden aria-label="Monatsrückblick"></section>
+
+  <section class="card hero" id="hero" aria-labelledby="hero-h">
+    <div class="hero-canvas"><canvas id="holo" aria-hidden="true"></canvas></div>
+    <div class="hero-side">
+      <div class="label" id="hero-h">Diese Woche trainiert</div>
+      <div class="hero-count"><b id="hero-days">0</b><span id="hero-days-l">Trainingstage</span></div>
+      <div class="hero-chips" id="hero-chips"></div>
+      <div class="hero-hint">Die leuchtenden Muskeln hast du in den letzten 7 Tagen trainiert.</div>
+    </div>
+  </section>
 
   <div class="grid">
     <!-- Phase -->
@@ -534,7 +635,7 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
   function ring(frac, inner, label, tone) {
     frac = 1; // always a closed circle, independent of the value
     tone = tone || "mono";
-    var g = { mono: ["#F4F4F5", "#5A5A62"], green: ["#2DB571", "#0C4F2D"], orange: ["#FF7A3D", "#A8320A"] }[tone];
+    var g = { mono: ["#F4F4F5", "#5A5A62"], green: ["#2EE59D", "#0B6B45"], orange: ["#7BF5C4", "#0E7A50"] }[tone];
     var glow = { mono: 2.5, green: 5, orange: 5 }[tone];
     var r = 76, c = 2 * Math.PI * r, id = "r" + uid(), ticks = "";
     for (var i = 0; i < 60; i++) {
@@ -1051,7 +1152,179 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
     }, "Foto gelöscht");
   });
 
-  function render() { if (ui.page) renderChartPage(); else { renderReview(); renderPhase(); renderBw(); renderExercises(); renderMilestones(); renderPhotos(); } }
+  // ---------- muscle hologram: a body made of dots, trained muscles glow ----------
+  var MUSCLE_NAMES = { chest: "Brust", shoulders: "Schultern", triceps: "Trizeps", biceps: "Bizeps", back: "Rücken", lowerback: "Unterer Rücken", abs: "Bauch", glutes: "Po", quads: "Beinstrecker", hamstrings: "Beinbeuger", calves: "Waden" };
+  var MUSCLE_RULES = [
+    [/wade|calf|calves/i, ["calves"]],
+    [/leg ?curl|beinbeuger/i, ["hamstrings"]],
+    [/leg ?ext|beinstreck/i, ["quads"]],
+    [/kreuzheben|deadlift/i, ["back", "hamstrings", "glutes"]],
+    [/beinpresse|kniebeuge|squat|ausfallschritt|lunge|hack/i, ["quads", "glutes"]],
+    [/hyperext|rückenstreck/i, ["lowerback", "glutes"]],
+    [/reverse ?fl|face ?pull/i, ["shoulders", "back"]],
+    [/latzug|rudern|klimm|pull ?down|\brow/i, ["back"]],
+    [/trizeps|triceps|dips|pushdown/i, ["triceps"]],
+    [/bizeps|biceps|curl|hammer|preacher/i, ["biceps"]],
+    [/seitheben|schulter|overhead|military|lateral/i, ["shoulders"]],
+    [/brust|bankdr|butterfly|\bfly|chest|liegest/i, ["chest"]],
+    [/crunch|bauch|plank|sit.?up/i, ["abs"]]
+  ];
+  var GROUP_MUSCLES = { push: ["chest", "shoulders", "triceps"], pull: ["back", "biceps"], legs: ["quads", "hamstrings", "glutes", "calves"] };
+  function musclesFor(ex) {
+    for (var i = 0; i < MUSCLE_RULES.length; i++) if (MUSCLE_RULES[i][0].test(ex.name)) return MUSCLE_RULES[i][1];
+    var out = []; groupsOf(ex).forEach(function (g) { out = out.concat(GROUP_MUSCLES[g] || []); }); return out;
+  }
+  function trainedThisWeek() {
+    var from = isoOffset(-6), days = {}, m = {}, byId = {};
+    state.exercises.forEach(function (e) { byId[e.id] = e; });
+    state.lifts.forEach(function (l) {
+      if (l.date < from) return;
+      days[l.date] = 1;
+      var ex = byId[l.exerciseId]; if (!ex) return;
+      musclesFor(ex).forEach(function (k) { m[k] = (m[k] || 0) + 1; });
+    });
+    return { days: Object.keys(days).length, muscles: m };
+  }
+
+  var holo = { pts: [], active: {}, raf: null, visible: true, tx: 0, ty: 0, gx: 0, gy: 0 };
+  var reduceMotion = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  (function buildBody() {
+    var seed = 7;
+    function R() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+    function lerpP(prof, y) { // piecewise smooth interpolation of [y, rx, rz, cz]
+      for (var k = 0; k < prof.length - 1; k++) {
+        var a = prof[k], b = prof[k + 1];
+        if (y >= a[0] && y <= b[0]) { var t = (y - a[0]) / (b[0] - a[0]); t = t * t * (3 - 2 * t); return [a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t, (a[3] || 0) + ((b[3] || 0) - (a[3] || 0)) * t]; }
+      }
+      var l = prof[prof.length - 1]; return [l[1], l[2], l[3] || 0];
+    }
+    function loft(prof, n, fn) { // vertical body of revolution with elliptic cross-sections
+      var y0 = prof[0][0], y1 = prof[prof.length - 1][0];
+      for (var i = 0; i < n; i++) {
+        var y = y0 + (y1 - y0) * R(), th = R() * Math.PI * 2, q = lerpP(prof, y);
+        var cx = Math.cos(th), cz = Math.sin(th);
+        holo.pts.push([cx * q[0], y, q[2] + cz * q[1], fn ? fn(cx, y, cz) : ""]);
+      }
+    }
+    function tube(ax, ay, az, bx, by, bz, radii, n, fn) { // tapered limb between two joints
+      var dx = bx - ax, dy = by - ay, dz = bz - az, L = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      dx /= L; dy /= L; dz /= L;
+      var ux = dy, uy = -dx, uz = 0, ul = Math.sqrt(ux * ux + uy * uy) || 1; ux /= ul; uy /= ul;
+      var vx = dy * uz - dz * uy, vy = dz * ux - dx * uz, vz = dx * uy - dy * ux;
+      for (var i = 0; i < n; i++) {
+        var t = R(), th = R() * Math.PI * 2, r = lerpP(radii, t)[0], c = Math.cos(th), sn = Math.sin(th);
+        holo.pts.push([ax + dx * L * t + (ux * c + vx * sn) * r, ay + dy * L * t + (uy * c + vy * sn) * r, az + dz * L * t + (uz * c + vz * sn) * r, fn ? fn(t, sn * (vz >= 0 ? 1 : -1)) : ""]);
+      }
+    }
+    function ell(cx, cy, cz, rx, ry, rz, n, fn, keep) {
+      for (var i = 0, made = 0; made < n && i < n * 20; i++) {
+        var u = R() * 2 - 1, th = R() * Math.PI * 2, sq = Math.sqrt(1 - u * u), x = sq * Math.cos(th), y = u, z = sq * Math.sin(th);
+        if (keep && !keep(x, y, z)) continue;
+        made++;
+        holo.pts.push([cx + x * rx, cy + y * ry, cz + z * rz, fn ? fn(x, y, z) : ""]);
+      }
+    }
+    // head + neck
+    ell(0, 0.86, 0.01, 0.092, 0.118, 0.105, 300);
+    loft([[0.66, 0.05, 0.05], [0.75, 0.045, 0.045]], 90);
+    // torso: hips -> waist -> chest -> shoulders (V-shape)
+    loft([[-0.14, 0.165, 0.115], [0.02, 0.15, 0.105], [0.16, 0.148, 0.1], [0.32, 0.19, 0.125, 0.01], [0.46, 0.225, 0.135, 0.015], [0.58, 0.235, 0.12], [0.67, 0.12, 0.08]], 1700,
+      function (cx, y, cz) {
+        if (cz > 0.15) return y > 0.33 ? "chest" : y > -0.06 ? "abs" : "";
+        if (cz < -0.15) return y > 0.2 ? "back" : y > -0.04 ? "lowerback" : "glutes";
+        return y > 0.25 ? "back" : "";
+      });
+    // pecs + glutes give the shape a little relief
+    [-1, 1].forEach(function (sd) {
+      ell(sd * 0.095, 0.44, 0.115, 0.1, 0.075, 0.045, 130, function () { return "chest"; }, function (x, y, z) { return z > 0.55; });
+      ell(sd * 0.085, -0.12, -0.09, 0.095, 0.09, 0.06, 120, function () { return "glutes"; }, function (x, y, z) { return z < -0.55; });
+      // shoulders (deltoids): only the outer cap, so it blends into the torso
+      ell(sd * 0.25, 0.585, 0, 0.085, 0.08, 0.085, 200, function () { return "shoulders"; }, function (x) { return x * sd > -0.1; });
+      // upper arm, forearm, hand
+      tube(sd * 0.29, 0.56, 0, sd * 0.36, 0.25, 0.01, [[0, 0.062], [0.45, 0.068], [1, 0.05]], 360, function (t, front) { return front > 0 ? "biceps" : "triceps"; });
+      tube(sd * 0.36, 0.25, 0.01, sd * 0.41, -0.04, 0.04, [[0, 0.05], [0.3, 0.052], [1, 0.034]], 260);
+      ell(sd * 0.425, -0.11, 0.045, 0.034, 0.055, 0.022, 70);
+      // thigh, lower leg, foot
+      tube(sd * 0.095, -0.15, 0, sd * 0.115, -0.56, 0.01, [[0, 0.1], [0.4, 0.095], [1, 0.062]], 620, function (t, front) { return front > 0 ? "quads" : "hamstrings"; });
+      tube(sd * 0.115, -0.56, 0.01, sd * 0.12, -0.93, -0.005, [[0, 0.058], [0.3, 0.066], [1, 0.034]], 400, function (t, front) { return front < 0 && t < 0.75 ? "calves" : ""; });
+      ell(sd * 0.12, -0.965, 0.045, 0.042, 0.022, 0.09, 70);
+    });
+  })();
+
+  function drawHolo(now) {
+    var cv = $("holo"); if (!cv) return;
+    var w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    var t = (now || 0) / 1000;
+    holo.gx += (holo.tx - holo.gx) * 0.06; holo.gy += (holo.ty - holo.gy) * 0.06;
+    var a = (reduceMotion ? 0.55 : t * 0.32) + window.scrollY * 0.004 + holo.gy, b = -0.06 + holo.gx;
+    var ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b);
+    var scale = Math.min(h * 0.46, w * 0.85), cx = w / 2, cy = h / 2;
+    var sweepY = reduceMotion ? 9 : 1.1 - ((t * 0.28) % 1) * 2.4;
+    var pulse = reduceMotion ? 1 : 0.78 + 0.22 * Math.sin(t * 2.2);
+    var hi = [], P = holo.pts, i, p, x, y, z, y2, z2, f, sx, sy, act;
+    ctx.fillStyle = "#DCE6E2";
+    for (i = 0; i < P.length; i++) {
+      p = P[i];
+      x = p[0] * ca + p[2] * sa; z = -p[0] * sa + p[2] * ca; y = p[1];
+      y2 = y * cb - z * sb; z2 = y * sb + z * cb;
+      f = 2.8 / (2.8 - z2); sx = cx + x * scale * f; sy = cy - y2 * scale * f;
+      act = holo.active[p[3]];
+      if (act) { hi.push(sx, sy, f, act, z2, y); continue; }
+      var al = 0.09 + (z2 + 0.3) * 0.28; if (al < 0.04) al = 0.04; if (al > 0.42) al = 0.42;
+      if (Math.abs(y - sweepY) < 0.035) al += 0.35;
+      ctx.globalAlpha = al; ctx.fillRect(sx, sy, 1.15 * f, 1.15 * f);
+    }
+    ctx.globalCompositeOperation = "lighter";
+    for (i = 0; i < hi.length; i += 6) {
+      sx = hi[i]; sy = hi[i + 1]; f = hi[i + 2]; act = hi[i + 3]; z2 = hi[i + 4];
+      var depth = 0.55 + (z2 + 0.3) * 0.7; if (depth > 1) depth = 1; if (depth < 0.35) depth = 0.35;
+      var boost = Math.abs(hi[i + 5] - sweepY) < 0.035 ? 1.4 : 1;
+      ctx.fillStyle = "#2EE59D"; ctx.globalAlpha = 0.09 * act * depth * boost;
+      ctx.fillRect(sx - 1.6 * f, sy - 1.6 * f, 4.4 * f, 4.4 * f);
+      ctx.fillStyle = "#B8FFE2"; ctx.globalAlpha = Math.min(1, act * pulse * depth * boost);
+      ctx.fillRect(sx, sy, 1.5 * f, 1.5 * f);
+    }
+    ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1;
+  }
+  function holoLoop(now) {
+    holo.raf = null;
+    drawHolo(now);
+    if (holo.visible && !document.hidden && !ui.page && !reduceMotion) holo.raf = requestAnimationFrame(holoLoop);
+  }
+  function kickHolo() { if (!holo.raf) holo.raf = requestAnimationFrame(holoLoop); }
+  function updateHolo() {
+    var tw = trainedThisWeek(), keys = Object.keys(tw.muscles);
+    holo.active = {};
+    keys.forEach(function (k) { holo.active[k] = 0.5 + 0.5 * Math.min(1, tw.muscles[k] / 3); });
+    $("hero-days").textContent = tw.days;
+    $("hero-days-l").textContent = tw.days === 1 ? "Trainingstag" : "Trainingstage";
+    var order = ["chest", "shoulders", "triceps", "back", "biceps", "abs", "lowerback", "glutes", "quads", "hamstrings", "calves"];
+    var html = order.filter(function (k) { return tw.muscles[k]; }).map(function (k) { return '<span class="mchip">' + MUSCLE_NAMES[k] + "</span>"; }).join("");
+    $("hero-chips").innerHTML = html || '<span class="mchip off">Noch kein Training in den letzten 7 Tagen</span>';
+    kickHolo();
+  }
+  try { new IntersectionObserver(function (es) { holo.visible = es[0].isIntersecting; if (holo.visible) kickHolo(); }).observe($("hero")); } catch (e) {}
+  document.addEventListener("visibilitychange", kickHolo);
+  window.addEventListener("scroll", function () { if (reduceMotion) kickHolo(); }, { passive: true });
+  window.addEventListener("resize", kickHolo);
+  window.addEventListener("deviceorientation", function (e) {
+    if (e.gamma == null) return;
+    var g = Math.max(-30, Math.min(30, e.gamma)), be = Math.max(-30, Math.min(30, (e.beta || 45) - 45));
+    holo.ty = g * 0.014; holo.tx = be * 0.006;
+  });
+  $("hero").addEventListener("pointermove", function (e) {
+    if (e.pointerType !== "mouse") return;
+    var r = $("hero").getBoundingClientRect();
+    holo.ty = ((e.clientX - r.left) / r.width - 0.5) * 0.9; holo.tx = ((e.clientY - r.top) / r.height - 0.5) * 0.3;
+  });
+  $("hero").addEventListener("pointerleave", function () { holo.tx = 0; holo.ty = 0; });
+
+  function render() { if (ui.page) renderChartPage(); else { renderReview(); updateHolo(); renderPhase(); renderBw(); renderExercises(); renderMilestones(); renderPhotos(); } }
 
   // ---------- rest timer ----------
   var timer = lsGet("gymlog.timer") || { endAt: 0, total: 210, label: "", doneAt: 0 };
