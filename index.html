@@ -388,7 +388,7 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
       <div id="bw-chart" hidden></div>
       <form class="row" id="bw-form">
         <div class="field" style="flex:1 1 120px"><label for="bw-kg">Gewicht heute (kg)</label><input type="number" id="bw-kg" step="0.1" min="20" max="300" inputmode="decimal" required placeholder="80,0"></div>
-        <button type="submit" class="btn-primary">+ Eintragen</button>
+        <span class="today-tag">speichert automatisch</span>
       </form>
       <details id="bw-history">
         <summary>Alle Einträge</summary>
@@ -396,7 +396,7 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
           <div class="sub-form-title">Früheren Tag nachtragen</div>
           <div class="field" style="flex:1 1 130px"><label for="bw-past-date">Datum</label><input type="date" id="bw-past-date" required></div>
           <div class="field" style="flex:1 1 90px"><label for="bw-past-kg">kg</label><input type="number" id="bw-past-kg" step="0.1" min="20" max="300" inputmode="decimal" required placeholder="80,0"></div>
-          <button type="submit" class="btn-dark">Nachtragen</button>
+          <span class="today-tag">speichert automatisch</span>
         </form>
         <div class="scroll" id="bw-table" style="margin-top:8px"></div>
       </details>
@@ -795,8 +795,7 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
       '<div class="field" style="flex:1 1 90px"><label for="lift-w">Gewicht (kg)</label><input type="number" id="lift-w" step="0.25" min="0" max="600" inputmode="decimal" required placeholder="' + (last ? kg(last.top, 0) : "60") + '"></div>' +
       '<div class="field" style="flex:1 1 60px"><label for="lift-r">Wdh.</label><input type="number" id="lift-r" step="1" min="1" max="100" inputmode="numeric" required placeholder="8"></div>' +
       '<div class="field" style="flex:1 1 60px"><label for="lift-s">Sätze</label><input type="number" id="lift-s" step="1" min="1" max="20" inputmode="numeric" placeholder="3"></div>' +
-      '<button type="submit" class="btn-primary">+ Eintragen</button>' +
-      '<span class="today-tag">für <b>heute, ' + fmtShort(today) + "</b></span></form>" +
+      '<span class="today-tag">für <b>heute, ' + fmtShort(today) + "</b> · speichert automatisch</span></form>" +
       (ss.length ? '<div class="stats">' + stat(kg(bestEver), "bestes e1RM (kg)") + stat(ss.length, "Trainings") +
         (ss.length >= 2 ? stat(signed(last.top - ss[0].top), "kg seit " + fmtShort(ss[0].date), last.top - ss[0].top >= 0 ? "g" : "o") : "") + "</div>" : "") +
       '<details data-details="' + esc(ex.id) + '"' + (ui.exDetails[ex.id] ? " open" : "") + "><summary>Alle Einträge (" + count + ")</summary>" +
@@ -805,7 +804,7 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
       '<div class="field" style="flex:1 1 80px"><label for="past-w">Gewicht (kg)</label><input type="number" id="past-w" step="0.25" min="0" max="600" inputmode="decimal" required></div>' +
       '<div class="field" style="flex:1 1 60px"><label for="past-r">Wdh.</label><input type="number" id="past-r" step="1" min="1" max="100" inputmode="numeric" required></div>' +
       '<div class="field" style="flex:1 1 60px"><label for="past-s">Sätze</label><input type="number" id="past-s" step="1" min="1" max="20" inputmode="numeric" placeholder="1"></div>' +
-      '<button type="submit" class="btn-dark">Nachtragen</button></form>' +
+      '<span class="today-tag">speichert automatisch</span></form>' +
       (hist ? '<div class="scroll" style="margin-top:8px"><table class="hist"><thead><tr><th>Datum</th><th class="r">Gewicht</th><th class="r">Wdh.</th><th class="r">Sätze</th><th class="r">e1RM</th><th></th></tr></thead><tbody>' + hist + "</tbody></table></div>" : '<div class="empty">Noch kein Eintrag für diese Übung.</div>') +
       "</details>" +
       '<div class="gchips">Gehört zu:' + GROUPS.map(function (G) { var on = gs.indexOf(G.key) >= 0; return '<button class="btn-dark btn-sm gchip" type="button" data-group-set="' + esc(ex.id) + "|" + G.key + '" aria-pressed="' + on + '">' + G.name + "</button>"; }).join("") + "</div>" +
@@ -817,6 +816,9 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
   function renderExercises() {
     if (!changed("ex", [state.exercises, state.lifts, ui.open, ui.groupOpen, todayISO()])) return;
     var list = $("ex-list");
+    var act = document.activeElement;
+    if (act && act.tagName === "INPUT" && list.contains(act)) { renderExercises.pending = true; sig.ex = null; return; }
+    renderExercises.pending = false;
     if (!state.exercises.length) { list.innerHTML = '<div class="empty">Noch keine Übungen. Füg unten deine erste hinzu und wähle Push, Pull oder Beine.</div>'; return; }
     // Keep half-typed values only while the same exercise stays open, never carry them into another one.
     var keepIds = ["lift-w", "lift-r", "lift-s", "past-date", "past-w", "past-r", "past-s"], keep = {};
@@ -1274,7 +1276,7 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
     if (pf) {
       e.preventDefault();
       var pdate = $("past-date").value, pw = num($("past-w").value), pr = parseInt($("past-r").value, 10), ps = parseInt($("past-s").value, 10) || 1;
-      if (!pdate || isNaN(pw) || isNaN(pr)) return;
+      if (!pdate || isNaN(pw) || isNaN(pr)) { if (!isNaN(pw) || !isNaN(pr)) toast(isNaN(pr) ? "Wiederholungen fehlen noch, Satz nicht gespeichert." : "Gewicht fehlt noch, Satz nicht gespeichert."); return; }
       if (pdate >= todayISO()) { toast("Für heute nutze das Feld oben. Nachtragen geht nur für frühere Tage."); return; }
       $("past-w").value = ""; $("past-r").value = ""; $("past-s").value = "";
       write(function () { return backend.put("lifts", uid(), { exerciseId: pf.dataset.pastLiftForm, date: pdate, weight: pw, reps: pr, sets: ps, createdAt: Date.now() }); }, "Nachgetragen für " + fmtNum(pdate));
@@ -1284,12 +1286,55 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
     e.preventDefault();
     var exId = f.dataset.liftForm;
     var w = parseFloat($("lift-w").value.replace(",", ".")), r = parseInt($("lift-r").value, 10), s = parseInt($("lift-s").value, 10) || 1;
-    if (isNaN(w) || isNaN(r)) return;
+    if (isNaN(w) || isNaN(r)) { if (!isNaN(w) || !isNaN(r)) toast(isNaN(r) ? "Wiederholungen fehlen noch, Satz nicht gespeichert." : "Gewicht fehlt noch, Satz nicht gespeichert."); return; }
     var before = sessionsFor(exId).reduce(function (m, x) { return Math.max(m, x.best); }, 0);
     var isPr = before > 0 && e1rm(w, r) > before;
     $("lift-w").value = ""; $("lift-r").value = ""; $("lift-s").value = "";
     write(function () { return backend.put("lifts", uid(), { exerciseId: exId, date: todayISO(), weight: w, reps: r, sets: s, createdAt: Date.now() }); }, isPr ? "Neuer Rekord!" : "Satz für heute gespeichert", isPr);
   });
+
+  // ---------- auto-save: entries are saved when you leave the form, scroll, or press Enter ----------
+  function isEntryForm(f) { return !!f && (f.id === "bw-form" || f.id === "bw-past-form" || f.hasAttribute("data-lift-form") || f.hasAttribute("data-past-lift-form")); }
+  function numInputs(f) { return Array.prototype.slice.call(f.querySelectorAll('input[type="number"]')); }
+  function hasValue(f) { return numInputs(f).some(function (i) { return i.value.trim() !== ""; }); }
+  function isComplete(f) {
+    if (f.id === "bw-form" || f.id === "bw-past-form") return numInputs(f)[0].value.trim() !== "";
+    var w = f.querySelector('[id$="-w"]'), r = f.querySelector('[id$="-r"]');
+    return !!w && !!r && w.value.trim() !== "" && r.value.trim() !== "";
+  }
+  function autoSave(f) {
+    if (!f || !document.body.contains(f) || !hasValue(f)) return;
+    f.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+  }
+  document.addEventListener("focusout", function (e) {
+    var f = e.target && e.target.closest ? e.target.closest("form") : null;
+    setTimeout(function () {
+      if (isEntryForm(f) && !f.contains(document.activeElement)) autoSave(f);
+      var a = document.activeElement;
+      if (renderExercises.pending && !(a && a.tagName === "INPUT" && $("ex-list").contains(a))) render();
+    }, 0);
+  }, true);
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" || !e.target || e.target.tagName !== "INPUT") return;
+    var f = e.target.form;
+    if (!isEntryForm(f)) return;
+    e.preventDefault();
+    if (isComplete(f)) { e.target.blur(); return; }
+    var next = numInputs(f).filter(function (i) { return i.value.trim() === "" && i.required; })[0];
+    if (next) next.focus(); else e.target.blur();
+  });
+  // A real finger/scroll gesture (not the browser scrolling the field into view) finishes a complete entry.
+  var touchY = null;
+  document.addEventListener("touchstart", function (e) { touchY = e.touches[0] ? e.touches[0].clientY : null; }, { passive: true });
+  function leaveIfComplete() {
+    var a = document.activeElement;
+    if (a && a.tagName === "INPUT" && isEntryForm(a.form) && isComplete(a.form)) a.blur();
+  }
+  document.addEventListener("touchmove", function (e) {
+    if (touchY == null || !e.touches[0] || Math.abs(e.touches[0].clientY - touchY) < 12) return;
+    touchY = null; leaveIfComplete();
+  }, { passive: true });
+  document.addEventListener("wheel", leaveIfComplete, { passive: true });
 
   function write(fn, okMsg, hot) {
     if (!backend) { toast("Speicher ist noch nicht bereit."); return; }
