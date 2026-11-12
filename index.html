@@ -457,7 +457,7 @@ body.chart-open { padding-bottom: 32px; }
           <button type="button" class="menu-item" id="m-import">Daten importieren</button>
           <button type="button" class="menu-item" id="m-export">Backup herunterladen</button>
           <button type="button" class="menu-item danger" id="m-logout">Abmelden</button>
-          <div class="menu-ver">Version 13 · 13.11.2026</div>
+          <div class="menu-ver">Version 14 · 13.11.2026</div>
         </div>
       </details>
       <input type="file" id="import-file" accept="application/json,.json" hidden>
@@ -1275,27 +1275,37 @@ body.chart-open { padding-bottom: 32px; }
   var pip = { cv: null, video: null, iv: null };
   var pipOk = !!(document.pictureInPictureEnabled && HTMLCanvasElement.prototype.captureStream);
   function pipDraw() {
+    // Same look as the floating pill inside the app: dark pill, mint edge, glowing dot, time, label, Stopp.
     var c = pip.cv, x = c.getContext("2d"), W = c.width, H = c.height, now = Date.now();
     var running = !!timer.endAt, done = !running && timer.doneAt && now - timer.doneAt < 8000;
     var left = running ? Math.max(0, Math.ceil((timer.endAt - now) / 1000)) : done ? 0 : timerBase;
-    var f = running ? Math.max(0, Math.min(1, (timer.endAt - now) / (timer.total * 1000))) : 0;
-    var g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#232327"); g.addColorStop(1, "#141416");
-    x.fillStyle = g; x.fillRect(0, 0, W, H);
-    // mint dot + label
-    x.shadowColor = "rgba(46,229,157,0.8)"; x.shadowBlur = 14; x.fillStyle = "#2EE59D";
-    x.beginPath(); x.arc(38, 44, 8, 0, Math.PI * 2); x.fill(); x.shadowBlur = 0;
-    x.fillStyle = "#8A8C91"; x.font = '500 26px Inter, system-ui, sans-serif'; x.textBaseline = "middle";
-    var lab = done ? "Pause vorbei" : running ? (timer.label || "Pause") : "Bereit";
-    if (lab.length > 20) lab = lab.slice(0, 19) + "…";
-    x.fillText(lab, 60, 45);
-    // big time
-    x.fillStyle = done ? "#7BF5C4" : "#F1F2F1"; x.font = '600 92px "Inter Tight", Inter, system-ui, sans-serif';
-    x.fillText(done ? "Los!" : fmtT(left), 28, 128);
-    // bar
-    var bx = 28, by = H - 34, bw = W - 56, bh = 10;
-    x.fillStyle = "rgba(255,255,255,0.08)"; roundRect(x, bx, by, bw, bh); x.fill();
-    if (f > 0) { var bg = x.createLinearGradient(bx, 0, bx + bw, 0); bg.addColorStop(0, "#22C285"); bg.addColorStop(1, "#2EE59D"); x.fillStyle = bg; x.shadowColor = "rgba(46,229,157,0.6)"; x.shadowBlur = 10; roundRect(x, bx, by, Math.max(bh, bw * f), bh); x.fill(); x.shadowBlur = 0; }
-    // close the mini window a few seconds after the pause is over or stopped
+    x.fillStyle = "#0F0F11"; x.fillRect(0, 0, W, H);
+    var px = 14, ph = 184, py = (H - ph) / 2, pw = W - 2 * px, cy = H / 2;
+    var g = x.createLinearGradient(0, py, 0, py + ph); g.addColorStop(0, "#232327"); g.addColorStop(1, "#141416");
+    x.shadowColor = "rgba(46,229,157,0.35)"; x.shadowBlur = 22;
+    x.fillStyle = g; roundRect(x, px, py, pw, ph); x.fill(); x.shadowBlur = 0;
+    x.lineWidth = 3; x.strokeStyle = "rgba(46,229,157,0.5)"; roundRect(x, px + 1.5, py + 1.5, pw - 3, ph - 3); x.stroke();
+    // dot
+    x.shadowColor = "#2EE59D"; x.shadowBlur = 18; x.fillStyle = "#2EE59D";
+    x.beginPath(); x.arc(px + 58, cy, 12, 0, Math.PI * 2); x.fill(); x.shadowBlur = 0;
+    // time
+    x.textBaseline = "middle";
+    x.font = '600 84px "Inter Tight", Inter, system-ui, sans-serif'; x.fillStyle = done ? "#7BF5C4" : "#F1F2F1";
+    var t = done ? "Los!" : fmtT(left), tx = px + 96; x.fillText(t, tx, cy + 4);
+    // Stopp button
+    var bw = 146, bh = 104, bx = px + pw - 24 - bw, by = cy - bh / 2;
+    x.fillStyle = "#1C1C1F"; roundRect(x, bx, by, bw, bh); x.fill();
+    x.lineWidth = 2.5; x.strokeStyle = "rgba(255,255,255,0.13)"; roundRect(x, bx, by, bw, bh); x.stroke();
+    x.font = '600 36px Inter, system-ui, sans-serif'; x.fillStyle = "#F1F2F1"; x.textAlign = "center";
+    x.fillText("Stopp", bx + bw / 2, cy + 2); x.textAlign = "left";
+    // label, shortened to fit between time and button
+    x.font = '600 84px "Inter Tight", Inter, system-ui, sans-serif';
+    var lx = tx + x.measureText(t).width + 24;
+    x.font = '500 38px Inter, system-ui, sans-serif'; x.fillStyle = "#8A8C91";
+    var lab = done ? "Weiter" : (timer.label || "Pause"), room = bx - 18 - lx;
+    if (x.measureText(lab).width > room) { while (lab.length > 1 && x.measureText(lab + "…").width > room) lab = lab.slice(0, -1); lab += "…"; }
+    if (room > 40) x.fillText(lab, lx, cy + 4);
+    // close the mini window shortly after the pause is over or stopped
     if (!running && !done && document.pictureInPictureElement === pip.video && pip.idleSince && now - pip.idleSince > 1500) document.exitPictureInPicture().catch(function () {});
     if (!running && !done) pip.idleSince = pip.idleSince || now; else pip.idleSince = 0;
   }
@@ -1303,7 +1313,7 @@ body.chart-open { padding-bottom: 32px; }
   function pipPrepare() {
     if (!pipOk) return null;
     if (!pip.video) {
-      pip.cv = document.createElement("canvas"); pip.cv.width = 480; pip.cv.height = 210;
+      pip.cv = document.createElement("canvas"); pip.cv.width = 640; pip.cv.height = 268;
       pipDraw();
       var v = document.createElement("video");
       v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.setAttribute("aria-hidden", "true");
@@ -1316,6 +1326,10 @@ body.chart-open { padding-bottom: 32px; }
       pip.video = v;
       try {
         if (navigator.mediaSession) navigator.mediaSession.setActionHandler("enterpictureinpicture", function () { if (timer.endAt) pipOpen(); });
+      } catch (e) {}
+      try {
+        // Android shows a pause button on the mini window; tapping it stops the pause (like "Stopp")
+        if (navigator.mediaSession) navigator.mediaSession.setActionHandler("pause", function () { stopTimer(); v.play().catch(function () {}); });
       } catch (e) {}
     }
     pip.video.play().catch(function () {});
