@@ -344,7 +344,7 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
           <button type="button" class="menu-item" id="m-import">Daten importieren</button>
           <button type="button" class="menu-item" id="m-export">Backup herunterladen</button>
           <button type="button" class="menu-item danger" id="m-logout">Abmelden</button>
-          <div class="menu-ver">Version 5 · 12.11.2026</div>
+          <div class="menu-ver">Version 6 · 12.11.2026</div>
         </div>
       </details>
       <input type="file" id="import-file" accept="application/json,.json" hidden>
@@ -555,7 +555,7 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
   function fmtShort(s) { return parseISO(s).toLocaleDateString("de-DE", { day: "numeric", month: "short" }); }
   function kg(n, d) { return (Math.round(n * 10) / 10).toLocaleString("de-DE", { minimumFractionDigits: d == null ? 1 : d, maximumFractionDigits: 1 }); }
   function signed(n) { var s = kg(Math.abs(n)); return (n > 0 ? "+" : n < 0 ? "−" : "±") + s; }
-  function e1rm(w, r) { return r <= 1 ? w : w * (1 + r / 30); }
+  function e1rm(w, r) { return !r || r <= 1 ? w : w * (1 + r / 30); }
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   function toast(msg, hot) { var t = $("toast"); t.textContent = msg; t.className = "toast" + (hot ? " hot" : ""); t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(function () { t.hidden = true; }, 2400); }
@@ -774,8 +774,9 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
     var key = g + ":" + ex.id;
     var ss = sessionsFor(ex.id), last = ss[ss.length - 1], open = ui.open === key;
     var bestEver = ss.reduce(function (m, s) { return Math.max(m, s.best); }, 0);
+    var lastTop = last ? last.entries.slice().sort(function (a, b) { return b.weight - a.weight; })[0] : null;
     var lastLine = last
-      ? (function () { var top = last.entries.slice().sort(function (a, b) { return b.weight - a.weight; })[0]; return (last.date === today ? "Heute" : fmtShort(last.date)) + " · " + kg(top.weight, 0) + " kg × " + top.reps + (top.sets > 1 ? " · " + top.sets + " Sätze" : ""); })()
+      ? (function () { var top = last.entries.slice().sort(function (a, b) { return b.weight - a.weight; })[0]; return (last.date === today ? "Heute" : fmtShort(last.date)) + " · " + kg(top.weight, 0) + " kg" + (top.reps ? " × " + top.reps : "") + (top.sets > 1 ? " · " + top.sets + " Sätze" : ""); })()
       : "Noch kein Eintrag";
     var head = '<div class="ex-head"><button class="ex-toggle" type="button" data-toggle="' + esc(key) + '" aria-expanded="' + open + '">' +
       '<span class="ex-icon" aria-hidden="true">' + esc(ex.name.trim().charAt(0).toUpperCase()) + "</span>" +
@@ -787,16 +788,16 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
     var hist = ss.slice().reverse().map(function (s) {
       var isPr = s.best > 0 && s.best === bestEver && ss.length > 1;
       return s.entries.map(function (l, i) {
-        return "<tr><td>" + (i === 0 ? fmtNum(s.date) + (isPr ? '<span class="pr">PR</span>' : "") : "") + '</td><td class="r">' + kg(l.weight) + ' kg</td><td class="r">' + l.reps + '</td><td class="r">' + (l.sets || 1) + '</td><td class="r">' + kg(e1rm(l.weight, l.reps)) + '</td><td class="r"><button class="x" type="button" data-del-lift="' + esc(l.id) + '" aria-label="Eintrag löschen">×</button></td></tr>';
+        return "<tr><td>" + (i === 0 ? fmtNum(s.date) + (isPr ? '<span class="pr">PR</span>' : "") : "") + '</td><td class="r">' + kg(l.weight) + ' kg</td><td class="r">' + (l.reps || "–") + '</td><td class="r">' + (l.sets || "–") + '</td><td class="r">' + kg(e1rm(l.weight, l.reps)) + '</td><td class="r"><button class="x" type="button" data-del-lift="' + esc(l.id) + '" aria-label="Eintrag löschen">×</button></td></tr>';
       }).join("");
     }).join("");
     var count = state.lifts.filter(function (l) { return l.exerciseId === ex.id; }).length;
     var gs = groupsOf(ex);
     var body = '<div class="ex-body">' +
       '<form class="row" data-lift-form="' + esc(ex.id) + '">' +
-      '<div class="field" style="flex:1 1 90px"><label for="lift-w">Gewicht (kg)</label><input type="text" id="lift-w" inputmode="decimal" autocomplete="off" enterkeyhint="next" required placeholder="' + (last ? kg(last.top, 0) : "60") + '"></div>' +
-      '<div class="field" style="flex:1 1 60px"><label for="lift-r">Wdh.</label><input type="number" id="lift-r" enterkeyhint="next" step="1" min="1" max="100" inputmode="numeric" required placeholder="8"></div>' +
-      '<div class="field" style="flex:1 1 60px"><label for="lift-s">Sätze</label><input type="number" id="lift-s" enterkeyhint="done" step="1" min="1" max="20" inputmode="numeric" placeholder="3"></div>' +
+      '<div class="field" style="flex:1 1 90px"><label for="lift-w">Gewicht (kg)</label><input type="text" id="lift-w" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="' + (lastTop ? kg(lastTop.weight) : "") + '"></div>' +
+      '<div class="field" style="flex:1 1 60px"><label for="lift-r">Wdh.</label><input type="number" id="lift-r" enterkeyhint="next" step="1" min="1" max="100" inputmode="numeric" placeholder="' + (lastTop && lastTop.reps ? lastTop.reps : "–") + '"></div>' +
+      '<div class="field" style="flex:1 1 60px"><label for="lift-s">Sätze</label><input type="number" id="lift-s" enterkeyhint="done" step="1" min="1" max="20" inputmode="numeric" placeholder="' + (lastTop && lastTop.sets ? lastTop.sets : "–") + '"></div>' +
       '<span class="today-tag">für <b>heute, ' + fmtShort(today) + "</b> · speichert automatisch</span></form>" +
       (ss.length ? '<div class="stats">' + stat(kg(bestEver), "bestes e1RM (kg)") + stat(ss.length, "Trainings") +
         (ss.length >= 2 ? stat(signed(last.top - ss[0].top), "kg seit " + fmtShort(ss[0].date), last.top - ss[0].top >= 0 ? "g" : "o") : "") + "</div>" : "") +
@@ -804,8 +805,8 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
       '<form class="row sub-form" data-past-lift-form="' + esc(ex.id) + '"><div class="sub-form-title">Früheren Tag nachtragen</div>' +
       '<div class="field" style="flex:1 1 130px"><label for="past-date">Datum</label><input type="date" id="past-date" required max="' + isoOffset(-1) + '"></div>' +
       '<div class="field" style="flex:1 1 80px"><label for="past-w">Gewicht (kg)</label><input type="text" id="past-w" inputmode="decimal" autocomplete="off" enterkeyhint="next" required></div>' +
-      '<div class="field" style="flex:1 1 60px"><label for="past-r">Wdh.</label><input type="number" id="past-r" enterkeyhint="next" step="1" min="1" max="100" inputmode="numeric" required></div>' +
-      '<div class="field" style="flex:1 1 60px"><label for="past-s">Sätze</label><input type="number" id="past-s" enterkeyhint="done" step="1" min="1" max="20" inputmode="numeric" placeholder="1"></div>' +
+      '<div class="field" style="flex:1 1 60px"><label for="past-r">Wdh.</label><input type="number" id="past-r" enterkeyhint="next" step="1" min="1" max="100" inputmode="numeric" placeholder="–"></div>' +
+      '<div class="field" style="flex:1 1 60px"><label for="past-s">Sätze</label><input type="number" id="past-s" enterkeyhint="done" step="1" min="1" max="20" inputmode="numeric" placeholder="–"></div>' +
       '<span class="today-tag">speichert automatisch</span></form>' +
       (hist ? '<div class="scroll" style="margin-top:8px"><table class="hist"><thead><tr><th>Datum</th><th class="r">Gewicht</th><th class="r">Wdh.</th><th class="r">Sätze</th><th class="r">e1RM</th><th></th></tr></thead><tbody>' + hist + "</tbody></table></div>" : '<div class="empty">Noch kein Eintrag für diese Übung.</div>') +
       "</details>" +
@@ -819,7 +820,7 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
     if (!changed("ex", [state.exercises, state.lifts, ui.open, ui.groupOpen, todayISO()])) return;
     var list = $("ex-list");
     var act = document.activeElement;
-    if (act && act.tagName === "INPUT" && list.contains(act)) { renderExercises.pending = true; sig.ex = null; return; }
+    if ((act && act.tagName === "INPUT" && list.contains(act)) || pointerDown) { renderExercises.pending = true; sig.ex = null; return; }
     renderExercises.pending = false;
     if (!state.exercises.length) { list.innerHTML = '<div class="empty">Noch keine Übungen. Füg unten deine erste hinzu und wähle Push, Pull oder Beine.</div>'; return; }
     // Keep half-typed values only while the same exercise stays open, never carry them into another one.
@@ -902,7 +903,7 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
         if (l.exerciseId !== ex.id) return; var e = e1rm(l.weight, l.reps);
         if (l.date < start) before = Math.max(before, e); else if (l.date <= end && e > best) { best = e; bl = l; }
       });
-      if (before > 0 && best > before) prs.push(ex.name + " · " + kg(bl.weight) + " kg × " + bl.reps);
+      if (before > 0 && best > before) prs.push(ex.name + " · " + kg(bl.weight) + " kg" + (bl.reps ? " × " + bl.reps : ""));
     });
     if (prs.length) wins.push({ big: prs.length, label: prs.length === 1 ? "neuer Rekord" : "neue Rekorde", list: prs.slice(0, 6), cls: "" });
     var bws = bwSorted(), before = null, inMonth = bws.filter(function (e) { return e.date >= start && e.date <= end; });
@@ -1277,8 +1278,8 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
     var pf = e.target.closest("[data-past-lift-form]");
     if (pf) {
       e.preventDefault();
-      var pdate = $("past-date").value, pw = num($("past-w").value), pr = parseInt($("past-r").value, 10), ps = parseInt($("past-s").value, 10) || 1;
-      if (!pdate || isNaN(pw) || isNaN(pr)) { if (!isNaN(pw) || !isNaN(pr)) toast(isNaN(pr) ? "Wiederholungen fehlen noch, Satz nicht gespeichert." : "Gewicht fehlt noch, Satz nicht gespeichert."); return; }
+      var pdate = $("past-date").value, pw = num($("past-w").value), pr = parseInt($("past-r").value, 10) || null, ps = parseInt($("past-s").value, 10) || null;
+      if (!pdate || isNaN(pw)) { if (pr || ps) toast("Gewicht fehlt noch, nicht gespeichert."); return; }
       if (pdate >= todayISO()) { toast("Für heute nutze das Feld oben. Nachtragen geht nur für frühere Tage."); return; }
       $("past-w").value = ""; $("past-r").value = ""; $("past-s").value = "";
       write(function () { return backend.put("lifts", uid(), { exerciseId: pf.dataset.pastLiftForm, date: pdate, weight: pw, reps: pr, sets: ps, createdAt: Date.now() }); }, "Nachgetragen für " + fmtNum(pdate));
@@ -1287,8 +1288,8 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
     var f = e.target.closest("[data-lift-form]"); if (!f) return;
     e.preventDefault();
     var exId = f.dataset.liftForm;
-    var w = parseFloat($("lift-w").value.replace(",", ".")), r = parseInt($("lift-r").value, 10), s = parseInt($("lift-s").value, 10) || 1;
-    if (isNaN(w) || isNaN(r)) { if (!isNaN(w) || !isNaN(r)) toast(isNaN(r) ? "Wiederholungen fehlen noch, Satz nicht gespeichert." : "Gewicht fehlt noch, Satz nicht gespeichert."); return; }
+    var w = parseFloat($("lift-w").value.replace(",", ".")), r = parseInt($("lift-r").value, 10) || null, s = parseInt($("lift-s").value, 10) || null;
+    if (isNaN(w)) { if (r || s) toast("Gewicht fehlt noch, nicht gespeichert."); return; }
     var before = sessionsFor(exId).reduce(function (m, x) { return Math.max(m, x.best); }, 0);
     var isPr = before > 0 && e1rm(w, r) > before;
     $("lift-w").value = ""; $("lift-r").value = ""; $("lift-s").value = "";
@@ -1301,8 +1302,8 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
   function hasValue(f) { return numInputs(f).some(function (i) { return i.value.trim() !== ""; }); }
   function isComplete(f) {
     if (f.id === "bw-form" || f.id === "bw-past-form") return numInputs(f)[0].value.trim() !== "";
-    var w = f.querySelector('[id$="-w"]'), r = f.querySelector('[id$="-r"]');
-    return !!w && !!r && w.value.trim() !== "" && r.value.trim() !== "";
+    var w = f.querySelector('[id$="-w"]');
+    return !!w && w.value.trim() !== "";
   }
   function autoSave(f) {
     if (!f || !document.body.contains(f) || !hasValue(f)) return;
@@ -1321,8 +1322,7 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
     var f = e.target.form;
     if (!isEntryForm(f)) return;
     e.preventDefault();
-    if (isComplete(f)) { e.target.blur(); return; }
-    var next = numInputs(f).filter(function (i) { return i.value.trim() === "" && i.required; })[0];
+    var ins = numInputs(f), next = ins[ins.indexOf(e.target) + 1];
     if (next) next.focus(); else e.target.blur();
   });
   // A real finger/scroll gesture (not the browser scrolling the field into view) finishes a complete entry.
@@ -1338,6 +1338,11 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; colo
   }, { passive: true });
   document.addEventListener("wheel", leaveIfComplete, { passive: true });
   // Tapping anywhere outside the current entry form ends the input (mobile browsers keep the field active otherwise).
+  var pointerDown = false;
+  document.addEventListener("pointerdown", function () { pointerDown = true; }, true);
+  function pointerDone() { setTimeout(function () { pointerDown = false; if (renderExercises.pending) render(); }, 60); }
+  document.addEventListener("pointerup", pointerDone, true);
+  document.addEventListener("pointercancel", pointerDone, true);
   document.addEventListener("pointerdown", function (e) {
     var a = document.activeElement;
     if (!a || a.tagName !== "INPUT" || !isEntryForm(a.form)) return;
