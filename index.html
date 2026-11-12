@@ -457,7 +457,7 @@ body.chart-open { padding-bottom: 32px; }
           <button type="button" class="menu-item" id="m-import">Daten importieren</button>
           <button type="button" class="menu-item" id="m-export">Backup herunterladen</button>
           <button type="button" class="menu-item danger" id="m-logout">Abmelden</button>
-          <div class="menu-ver">Version 12 · 13.11.2026</div>
+          <div class="menu-ver">Version 13 · 13.11.2026</div>
         </div>
       </details>
       <input type="file" id="import-file" accept="application/json,.json" hidden>
@@ -531,6 +531,7 @@ body.chart-open { padding-bottom: 32px; }
         <div class="t-actions">
           <button class="btn-dark btn-sm" id="t-sub" type="button" aria-label="15 Sekunden weniger">−15 s</button>
           <button class="btn-dark btn-sm" id="t-add" type="button" aria-label="15 Sekunden mehr">+15 s</button>
+          <button class="btn-dark btn-sm" id="t-pip" type="button" hidden aria-label="Timer als Mini-Fenster über anderen Apps zeigen"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><rect x="3" y="5" width="18" height="14" rx="2"/><rect x="12" y="11" width="7" height="6" rx="1" fill="currentColor"/></svg>Mini-Fenster</button>
         </div>
         <div class="bar t-bar"><i id="t-bar" style="width:100%;clip-path:inset(0 100% 0 0 round 999px)"></i></div>
         <div class="t-actions">
@@ -1266,6 +1267,72 @@ body.chart-open { padding-bottom: 32px; }
   $("t-start").addEventListener("click", function () { startTimer(timerBase, ""); });
   $("t-stop").addEventListener("click", stopTimer);
   $("t-float-stop").addEventListener("click", stopTimer);
+
+  // ---------- mini window outside the app (Picture-in-Picture) ----------
+  // Android only lets web apps float a *video* over other apps, so the timer pill is drawn on a canvas
+  // and streamed into a muted video. It opens with the "Mini-Fenster" button, and where Chrome supports it,
+  // automatically when you leave the app while a pause is running.
+  var pip = { cv: null, video: null, iv: null };
+  var pipOk = !!(document.pictureInPictureEnabled && HTMLCanvasElement.prototype.captureStream);
+  function pipDraw() {
+    var c = pip.cv, x = c.getContext("2d"), W = c.width, H = c.height, now = Date.now();
+    var running = !!timer.endAt, done = !running && timer.doneAt && now - timer.doneAt < 8000;
+    var left = running ? Math.max(0, Math.ceil((timer.endAt - now) / 1000)) : done ? 0 : timerBase;
+    var f = running ? Math.max(0, Math.min(1, (timer.endAt - now) / (timer.total * 1000))) : 0;
+    var g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#232327"); g.addColorStop(1, "#141416");
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    // mint dot + label
+    x.shadowColor = "rgba(46,229,157,0.8)"; x.shadowBlur = 14; x.fillStyle = "#2EE59D";
+    x.beginPath(); x.arc(38, 44, 8, 0, Math.PI * 2); x.fill(); x.shadowBlur = 0;
+    x.fillStyle = "#8A8C91"; x.font = '500 26px Inter, system-ui, sans-serif'; x.textBaseline = "middle";
+    var lab = done ? "Pause vorbei" : running ? (timer.label || "Pause") : "Bereit";
+    if (lab.length > 20) lab = lab.slice(0, 19) + "…";
+    x.fillText(lab, 60, 45);
+    // big time
+    x.fillStyle = done ? "#7BF5C4" : "#F1F2F1"; x.font = '600 92px "Inter Tight", Inter, system-ui, sans-serif';
+    x.fillText(done ? "Los!" : fmtT(left), 28, 128);
+    // bar
+    var bx = 28, by = H - 34, bw = W - 56, bh = 10;
+    x.fillStyle = "rgba(255,255,255,0.08)"; roundRect(x, bx, by, bw, bh); x.fill();
+    if (f > 0) { var bg = x.createLinearGradient(bx, 0, bx + bw, 0); bg.addColorStop(0, "#22C285"); bg.addColorStop(1, "#2EE59D"); x.fillStyle = bg; x.shadowColor = "rgba(46,229,157,0.6)"; x.shadowBlur = 10; roundRect(x, bx, by, Math.max(bh, bw * f), bh); x.fill(); x.shadowBlur = 0; }
+    // close the mini window a few seconds after the pause is over or stopped
+    if (!running && !done && document.pictureInPictureElement === pip.video && pip.idleSince && now - pip.idleSince > 1500) document.exitPictureInPicture().catch(function () {});
+    if (!running && !done) pip.idleSince = pip.idleSince || now; else pip.idleSince = 0;
+  }
+  function roundRect(x, X, Y, w, h) { var r = h / 2; x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r); x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath(); }
+  function pipPrepare() {
+    if (!pipOk) return null;
+    if (!pip.video) {
+      pip.cv = document.createElement("canvas"); pip.cv.width = 480; pip.cv.height = 210;
+      pipDraw();
+      var v = document.createElement("video");
+      v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.setAttribute("aria-hidden", "true");
+      v.style.cssText = "position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:0.01;pointer-events:none;";
+      v.srcObject = pip.cv.captureStream(15);
+      document.body.appendChild(v);
+      v.addEventListener("enterpictureinpicture", function () { clearInterval(pip.iv); pip.iv = setInterval(pipDraw, 100); });
+      v.addEventListener("leavepictureinpicture", function () { clearInterval(pip.iv); pip.iv = setInterval(pipDraw, 1000); });
+      pip.iv = setInterval(pipDraw, 1000);
+      pip.video = v;
+      try {
+        if (navigator.mediaSession) navigator.mediaSession.setActionHandler("enterpictureinpicture", function () { if (timer.endAt) pipOpen(); });
+      } catch (e) {}
+    }
+    pip.video.play().catch(function () {});
+    return pip.video;
+  }
+  function pipOpen() {
+    var v = pipPrepare(); if (!v) return;
+    pipDraw();
+    var go = function () { v.requestPictureInPicture().catch(function () { toast("Mini-Fenster ging nicht auf"); }); };
+    if (v.readyState >= 1) go(); else v.addEventListener("loadedmetadata", go, { once: true });
+  }
+  if (pipOk) {
+    $("t-pip").hidden = false;
+    $("t-pip").addEventListener("click", pipOpen);
+    // prepare on Start (a tap), so Chrome can float it by itself when you leave the app
+    $("t-start").addEventListener("click", function () { pipPrepare(); });
+  }
   try { new IntersectionObserver(function (es) { ui.timerVisible = es[0].isIntersecting; tickTimer(); }).observe($("timer-card")); } catch (e) { ui.timerVisible = true; }
   setInterval(tickTimer, 250);
   tickTimer();
