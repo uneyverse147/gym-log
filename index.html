@@ -324,6 +324,26 @@ button.rot-chip { font: inherit; color: var(--fg); text-align: left; cursor: poi
 button.rot-chip:active { transform: scale(0.98); }
 .rot-chip.today { border-color: var(--accent); background: rgba(46,229,157,0.12); box-shadow: 0 0 0 1px var(--accent), 0 0 22px -8px var(--accent-glow); }
 .rot-chip.today b { color: var(--accent-2); }
+.rot-when { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 14px; font-weight: 600; flex-wrap: wrap; }
+.rot-datebtn { position: relative; font-size: 12px; font-weight: 500; color: var(--muted); border: 1px solid var(--line-strong); border-radius: 999px; padding: 5px 12px; cursor: pointer; overflow: hidden; }
+.rot-datebtn input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; border: 0; padding: 0; }
+.rot-when .rot-datebtn { margin-left: auto; }
+.rot-types { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.rot-type { font: inherit; text-align: left; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; white-space: normal; gap: 4px; padding: 14px 12px; border-radius: 16px; border: 1px solid var(--line-strong); background: rgba(255,255,255,0.02); color: var(--fg); cursor: pointer; min-width: 0; position: relative; }
+.rot-type::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--gc); box-shadow: 0 0 10px var(--gc); margin-bottom: 4px; }
+.rot-type b { font-size: 16px; font-weight: 700; letter-spacing: 0.04em; }
+.rot-type span { font-size: 11.5px; color: var(--muted); line-height: 1.3; white-space: normal; overflow-wrap: anywhere; }
+.rot-type span em { font-style: normal; display: block; color: var(--fg); font-weight: 600; font-size: 12.5px; }
+.rot-type.open { border-color: color-mix(in srgb, var(--gc) 70%, transparent); }
+.rot-type.done { border-color: var(--gc); background: color-mix(in srgb, var(--gc) 12%, transparent); box-shadow: 0 0 0 1px var(--gc), 0 0 22px -8px var(--gc); }
+.rot-type.done b { color: var(--gc); }
+.rot-panel { margin-top: 12px; padding: 14px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--gc) 35%, transparent); background: color-mix(in srgb, var(--gc) 4%, transparent); display: flex; flex-direction: column; gap: 10px; }
+.rot-q { font-size: 13px; color: var(--muted); }
+.rot-edit { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; }
+.rot-edit > span { color: var(--fg); margin-right: auto; }
+.rot-when .link { font-size: 12px; font-weight: 500; }
+.danger-link { color: #FF8A8A; }
+.cal-day .tag + .tag { margin-top: -1px; }
 .rot-chip.rot-leg { width: 100%; flex-direction: row; align-items: center; justify-content: space-between; padding: 12px 14px; }
 .rot-chip.rot-leg.today { border-color: #C6F26B; background: rgba(198,242,107,0.10); box-shadow: 0 0 0 1px #C6F26B, 0 0 22px -8px rgba(198,242,107,0.5); }
 .rot-chip.rot-leg.today b { color: #DDF7A0; }
@@ -630,7 +650,7 @@ body.chart-open { padding-bottom: 32px; }
           <button type="button" class="menu-item" id="m-export">Backup herunterladen</button>
           <button type="button" class="menu-item" id="m-backups">Automatische Backups</button>
           <button type="button" class="menu-item danger" id="m-logout">Abmelden</button>
-          <div class="menu-ver">Version 27 · 13.11.2026</div>
+          <div class="menu-ver">Version 28 · 13.11.2026</div>
         </div>
       </details>
       <input type="file" id="import-file" accept="application/json,.json" hidden>
@@ -1240,8 +1260,8 @@ body.chart-open { padding-bottom: 32px; }
       { key: "bizeps", name: "Bizeps" }
     ]
   };
-  function rotationFor(g) {
-    var slots = ROTATION[g], today = todayISO();
+  function rotationFor(g, onDate) {
+    var slots = ROTATION[g], today = onDate || todayISO();
     var starts = state.rot.filter(function (r) { return r.group === g && slots.some(function (sl) { return sl.key === r.slot; }); })
       .sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
     var win = starts.slice(-slots.length * 2), info = {};
@@ -1259,36 +1279,72 @@ body.chart-open { padding-bottom: 32px; }
     var n = Math.round((parseISO(todayISO()) - parseISO(d)) / DAY);
     return n === 0 ? "heute" : n === 1 ? "gestern" : "vor " + n + " T.";
   }
+  // Step 1: what are you training (Push / Pull / Beine) on the chosen day.
+  // Step 2 (Push / Pull): which start, from the fair rotation. Any entry can be moved to another day.
+  function rotEntry(g, d) { return state.rot.filter(function (r) { return r.group === g && r.date === d; })[0] || null; }
   function renderRotation() {
-    if (!changed("rot", [state.rot, todayISO()])) return;
-    $("rot-view").innerHTML = ["push", "pull"].map(function (g) {
-      var G = GROUPS.filter(function (x) { return x.key === g; })[0], r = rotationFor(g), nx = r.slots.filter(function (x) { return x.key === r.next; })[0];
-      return '<div class="rot-group"><div class="rot-top">' +
-        '<span class="gdot" style="background:' + G.color + ";box-shadow:0 0 10px " + G.color + '"></span><span class="group-name">' + G.name.toUpperCase() + "</span>" +
-        '<span class="rot-next">' + (r.today ? "Heute: " + esc(r.slots.filter(function (x) { return x.key === r.today; })[0].name) + " · danach " : "Als Nächstes ") + "<b>" + esc(nx.name) + "</b></span></div>" +
-        '<div class="rot-chips n' + r.slots.length + '">' + r.slots.map(function (sl) {
-          var isT = sl.key === r.today;
-          return '<button type="button" class="rot-chip' + (isT ? " today" : "") + '" data-rot="' + g + "|" + sl.key + '" aria-pressed="' + isT + '"><b>' + (isT ? "✓ " : "") + esc(sl.name) + "</b>" + (isT ? "<span>Heute gestartet</span>" : sl.key === r.next ? '<span class="rot-up">' + (r.today ? "Nächstes Mal" : "Als Nächstes") + "</span>" : "<span>" + sl.count + "× · " + agoText(sl.last) + "</span>") + "</button>";
-        }).join("") + "</div></div>";
-    }).join("") + legdayRow() + '<div class="rot-note">Tipp an, womit du heute anfängst. Nochmal tippen nimmt es zurück. Dran ist, womit du zuletzt am seltensten angefangen hast. Bei Gleichstand gewinnt, was am längsten her ist.</div>';
+    var today = todayISO();
+    if (!ui.rotDate || ui.rotDay !== today) { ui.rotDate = today; ui.rotDay = today; }
+    var d = ui.rotDate;
+    if (!changed("rot", [state.rot, d, ui.rotOpen, today])) return;
+    var isToday = d === today;
+    var head = '<div class="rot-when"><span>' + (isToday ? "Heute" : esc(fmtDate(d, { weekday: "long", day: "numeric", month: "long" }))) + '</span>' +
+      (isToday ? "" : '<button type="button" class="link" data-rot-today>zurück zu heute</button>') + '<label class="rot-datebtn">Anderer Tag<input type="date" id="rot-date" value="' + d + '" max="' + today + '"></label>' + "</div>";
+    var types = '<div class="rot-types">' + GROUPS.map(function (G) {
+      var e = rotEntry(G.key, d), open = ui.rotOpen === G.key, sub;
+      if (e) sub = G.key === "legs" ? "eingetragen" : "Start<em>" + esc(rotSlotName(G.key, e.slot)) + "</em>";
+      else if (G.key === "legs") { var lg = state.rot.filter(function (r) { return r.group === "legs"; }).map(function (r) { return r.date; }).sort(); sub = lg.length ? "zuletzt " + agoText(lg[lg.length - 1]) : "noch nie"; }
+      else { var rr = rotationFor(G.key, d); sub = "Als Nächstes<em>" + esc(rotSlotName(G.key, rr.next)) + "</em>"; }
+      return '<button type="button" class="rot-type' + (e ? " done" : "") + (open ? " open" : "") + '" data-rtype="' + G.key + '" style="--gc:' + G.color + '" aria-expanded="' + open + '">' +
+        "<b>" + (e ? "✓ " : "") + G.name + "</b><span>" + sub + "</span></button>";
+    }).join("") + "</div>";
+    var panel = "";
+    if (ui.rotOpen) {
+      var g = ui.rotOpen, e = rotEntry(g, d), G = GROUPS.filter(function (x) { return x.key === g; })[0];
+      if (g !== "legs") {
+        var r = rotationFor(g, d);
+        panel += '<div class="rot-q">Womit fängst du an?</div><div class="rot-chips n' + r.slots.length + '">' + r.slots.map(function (sl) {
+          var isT = e && e.slot === sl.key;
+          return '<button type="button" class="rot-chip' + (isT ? " today" : "") + '" data-rot="' + g + "|" + sl.key + '" aria-pressed="' + !!isT + '"><b>' + (isT ? "✓ " : "") + esc(sl.name) + "</b>" +
+            (isT ? "<span>Gewählt</span>" : sl.key === r.next ? '<span class="rot-up">Als Nächstes</span>' : "<span>" + sl.count + "× · " + agoText(sl.last) + "</span>") + "</button>";
+        }).join("") + "</div>";
+      }
+      if (e) panel += '<div class="rot-edit"><span>' + G.name + " am " + fmtNum(e.date) + '</span><label class="rot-datebtn">Datum ändern<input type="date" id="rot-move" value="' + e.date + '" max="' + today + '" data-move="' + esc(e.id) + '"></label>' +
+        '<button type="button" class="link danger-link" data-rot-del="' + esc(e.id) + '">Entfernen</button></div>';
+      panel = '<div class="rot-panel" style="--gc:' + G.color + '">' + panel + "</div>";
+    }
+    $("rot-view").innerHTML = head + types + panel + '<div class="rot-note">Tipp an, was du trainierst. Bei Push und Pull wählst du danach deinen Start. Dran ist, womit du zuletzt am seltensten angefangen hast, bei Gleichstand, was am längsten her ist.</div>';
   }
-  function legdayRow() {
-    var G = GROUPS.filter(function (x) { return x.key === "legs"; })[0], today = todayISO();
-    var legs = state.rot.filter(function (r) { return r.group === "legs"; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
-    var isT = legs.some(function (r) { return r.date === today; }), last = legs.length ? legs[legs.length - 1].date : "";
-    var prev = legs.filter(function (r) { return r.date !== today; }), lastPrev = prev.length ? prev[prev.length - 1].date : "";
-    return '<div class="rot-group"><div class="rot-top"><span class="gdot" style="background:' + G.color + ";box-shadow:0 0 10px " + G.color + '"></span><span class="group-name">BEINE</span>' +
-      '<span class="rot-next">' + (isT ? "Heute Legday" : last ? "Zuletzt " + agoText(last) : "Noch kein Legday") + "</span></div>" +
-      '<button type="button" class="rot-chip rot-leg' + (isT ? " today" : "") + '" data-rot="legs|legday" aria-pressed="' + isT + '"><b>' + (isT ? "✓ Legday" : "Legday") + "</b><span>" +
-      (isT ? "Heute eingetragen" : legs.length + "× · " + agoText(lastPrev)) + "</span></button></div>";
+  function saveRot(g, slot, date, msg) {
+    write(function () { return backend.put("phase", "rot:" + g + ":" + date, { group: g, slot: slot, date: date, createdAt: Date.now() }); }, msg);
   }
   $("rot-view").addEventListener("click", function (e) {
-    var b = e.target.closest("[data-rot]"); if (!b || !backend) return;
-    var parts = b.dataset.rot.split("|"), g = parts[0], slot = parts[1], today = todayISO(), id = "rot:" + g + ":" + today;
-    var cur = state.rot.filter(function (r) { return r.id === id; })[0];
-    var name = rotSlotName(g, slot);
-    if (cur && cur.slot === slot) write(function () { return backend.remove("phase", id); }, g === "legs" ? "Legday von heute zurückgenommen" : "Start von heute zurückgenommen");
-    else write(function () { return backend.put("phase", id, { group: g, slot: slot, date: today, createdAt: Date.now() }); }, g === "legs" ? "Legday für heute eingetragen" : groupName(g) + " heute mit " + name + " gestartet");
+    if (!backend) return;
+    var d = ui.rotDate || todayISO(), when = d === todayISO() ? "heute" : "am " + fmtNum(d);
+    if (e.target.closest("[data-rot-today]")) { ui.rotDate = todayISO(); ui.rotOpen = null; renderRotation(); return; }
+    var t = e.target.closest("[data-rtype]");
+    if (t) {
+      var g = t.dataset.rtype;
+      if (g === "legs" && !rotEntry("legs", d)) { ui.rotOpen = "legs"; saveRot("legs", "legday", d, "Beine " + when + " eingetragen"); return; }
+      ui.rotOpen = ui.rotOpen === g ? null : g; renderRotation(); return;
+    }
+    var del = e.target.closest("[data-rot-del]");
+    if (del) { var x = state.rot.filter(function (r) { return r.id === del.dataset.rotDel; })[0]; ui.rotOpen = null; write(function () { return backend.remove("phase", del.dataset.rotDel); }, (x ? groupName(x.group) : "Eintrag") + " entfernt"); return; }
+    var b = e.target.closest("[data-rot]"); if (!b) return;
+    var parts = b.dataset.rot.split("|"), gg = parts[0], slot = parts[1], cur = rotEntry(gg, d);
+    if (cur && cur.slot === slot) { write(function () { return backend.remove("phase", cur.id); }, groupName(gg) + " " + when + " zurückgenommen"); return; }
+    saveRot(gg, slot, d, groupName(gg) + " " + when + " · Start " + rotSlotName(gg, slot));
+  });
+  $("rot-view").addEventListener("change", function (e) {
+    if (e.target.id === "rot-date") { if (e.target.value) { ui.rotDate = e.target.value > todayISO() ? todayISO() : e.target.value; ui.rotOpen = null; renderRotation(); } return; }
+    if (e.target.id === "rot-move" && backend) {
+      var old = state.rot.filter(function (r) { return r.id === e.target.dataset.move; })[0], nd = e.target.value;
+      if (!old || !nd || nd === old.date) return;
+      if (nd > todayISO()) { toast("Das Datum liegt in der Zukunft."); return; }
+      var nid = "rot:" + old.group + ":" + nd, data = { group: old.group, slot: old.slot, date: nd, createdAt: Date.now() };
+      ui.rotDate = nd;
+      write(function () { return backend.remove("phase", old.id).then(function () { return backend.put("phase", nid, data); }); }, groupName(old.group) + " verschoben auf " + fmtNum(nd));
+    }
   });
   function rotSlotName(g, k) { if (g === "legs") return "Legday"; var x = (ROTATION[g] || []).filter(function (sl) { return sl.key === k; })[0]; return x ? x.name : k; }
   function renderRotHistory() {
@@ -1343,16 +1399,15 @@ body.chart-open { padding-bottom: 32px; }
       es.forEach(function (r) { if (count[r.group] != null) count[r.group]++; });
       if (es.length) trainDays++;
       var c1 = es.length ? col[es[0].group] : "", c2 = es.length ? col[es[es.length - 1].group] : "";
-      var tag = es.length ? (es.length > 1 ? es.map(function (r) { return groupName(r.group).charAt(0); }).join("+") : es[0].group === "legs" ? "Beine" : rotSlotName(es[0].group, es[0].slot)) : "";
+      var tag = es.map(function (r) { return '<span class="tag" style="color:' + col[r.group] + '">' + groupName(r.group) + "</span>"; }).join("");
       cells.push('<button type="button" class="cal-day' + (es.length ? " has" : "") + (iso === today ? " today" : "") + (ui.calSel === iso ? " sel" : "") + '"' +
         (es.length ? ' data-cal="' + iso + '" style="--c1:' + c1 + ";--c2:" + c2 + '"' : " disabled") + ' aria-label="' + fmtNum(iso) + (es.length ? ": " + es.map(function (r) { return groupName(r.group); }).join(", ") : "") + '">' +
-        '<span class="n">' + d + "</span>" + (tag ? '<span class="tag" style="color:' + c1 + '">' + esc(tag) + "</span>" : "") +
-        (es.length ? '<span class="dots">' + es.map(function (r) { return '<i style="background:' + col[r.group] + '"></i>'; }).join("") + "</span>" : "") + "</button>");
+        '<span class="n">' + d + "</span>" + tag + "</button>");
     }
     $("cal-grid").innerHTML = cells.join("");
     var sel = ui.calSel && byDay[ui.calSel], selLine = "";
     if (sel) selLine = '<div class="cal-sel"><b>' + esc(fmtDate(ui.calSel, { weekday: "long", day: "numeric", month: "long" })) + "</b> · " +
-      sel.map(function (r) { return r.group === "legs" ? "Legday" : groupName(r.group) + " (Start " + rotSlotName(r.group, r.slot) + ")"; }).join(" · ") + "</div>";
+      sel.map(function (r) { return groupName(r.group); }).join(" · ") + "</div>";
     $("cal-foot").innerHTML = selLine + '<div class="cal-legend">' + GROUPS.map(function (G) { return '<span><i style="background:' + G.color + '"></i>' + G.name + " " + count[G.key] + "×</span>"; }).join("") +
       "<span>" + trainDays + (trainDays === 1 ? " Trainingstag" : " Trainingstage") + "</span></div>";
   }
