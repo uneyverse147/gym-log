@@ -518,7 +518,7 @@ body.chart-open { padding-bottom: 32px; }
           <button type="button" class="menu-item" id="m-import">Daten importieren</button>
           <button type="button" class="menu-item" id="m-export">Backup herunterladen</button>
           <button type="button" class="menu-item danger" id="m-logout">Abmelden</button>
-          <div class="menu-ver">Version 22 · 13.11.2026</div>
+          <div class="menu-ver">Version 23 · 13.11.2026</div>
         </div>
       </details>
       <input type="file" id="import-file" accept="application/json,.json" hidden>
@@ -1145,8 +1145,8 @@ body.chart-open { padding-bottom: 32px; }
     year: '<text x="0" y="6" text-anchor="middle" font-size="22" font-weight="800" font-family="Inter Tight, Inter, sans-serif" stroke="none" fill="currentColor">365</text><text x="0" y="17" text-anchor="middle" font-size="6.5" font-weight="700" letter-spacing="1.6" font-family="Inter, sans-serif" stroke="none" fill="currentColor">TAGE</text>',
     rotation: '<path d="M12 -8a14 14 0 0 0 -24 2"/><path d="M-12 8a14 14 0 0 0 24 -2"/><path d="M-14 -11v6h6M14 11v-6h-6"/><text x="0" y="4" text-anchor="middle" font-size="10" font-weight="800" font-family="Inter, sans-serif" stroke="none" fill="currentColor">25</text>',
     phases: '<path d="M-12 8l12 -8 12 8M-12 0l12 -8 12 8M-12 -8l12 -8 12 8"/>',
-    bulk: '<path d="M0 -16v28M-9 -7l9 -9 9 9"/><path d="M-14 16h28"/>',
-    cut: '<path d="M-10 14l18 -30 4 2 -12 30z"/><path d="M-12 -10l6 0M-14 -2l6 0"/>'
+    bulk: '<g transform="translate(2.6 -0.4) scale(1.06)"><path stroke="none" fill="currentColor" d="M-14.5 -11.2 L-12.6 -13.6 Q-10 -15.4 -6.6 -16 L-5.6 -18.6 Q-3.6 -19.6 -2.4 -17.6 L-2.2 -16 Q3.6 -15.4 6.4 -10.4 Q10.6 -5.2 10.6 2 Q11.4 8.4 8.6 12.4 L9.6 17.6 Q9.4 18.6 8.2 18.6 L2.6 18.6 Q1.6 18.4 2.2 17.2 L3.4 15.2 Q0.4 14.4 -1.6 14.6 L-1.4 17.4 Q-1.6 18.6 -2.8 18.6 L-7.4 18.6 Q-8.4 18.4 -7.8 17.2 L-6.4 13.4 Q-8.6 8 -7.6 1.6 L-10.6 -1.6 L-13.8 -1.2 L-16.6 -3 L-13.8 -3.4 L-16.8 -5.2 L-13.4 -5.4 L-15.6 -7.6 L-11.8 -6.6 L-8.4 -4.6 Q-7.8 -7.2 -9.4 -8.4 L-12.4 -8.6 L-13.4 -10.2 L-11.6 -10.4 Z"/><circle cx="-8.6" cy="-13.2" r="0.9" stroke="none" fill="#0D0D0F"/><path d="M-13.2 -10.2 L-11.8 -9.4 L-12.8 -8.8" stroke="#0D0D0F" stroke-width="0.8"/><path d="M2 -6 Q5 0 3 6 M-3 2 Q-2 7 -3.6 11" stroke="#0D0D0F" stroke-width="0.9" opacity=".45"/></g>',
+    cut: '<path d="M-13 -17 C-14.5 -3 -12 8 0 18 C12 8 14.5 -3 13 -17" stroke-width="1.8"/><g stroke="none" fill="currentColor"><rect x="-8.6" y="-13" width="7.4" height="7" rx="2.6"/><rect x="1.2" y="-13" width="7.4" height="7" rx="2.6"/><rect x="-8.2" y="-4.4" width="7" height="6.8" rx="2.5"/><rect x="1.2" y="-4.4" width="7" height="6.8" rx="2.5"/><rect x="-7.4" y="4" width="6.2" height="6.4" rx="2.4"/><rect x="1.2" y="4" width="6.2" height="6.4" rx="2.4"/></g><path d="M-10.5 11.5 L-2 17 M10.5 11.5 L2 17" stroke-width="1.6"/>'
   };
   function medalSVG(a, on) {
     var m = METALS[a.metal], id = "md" + a.id.replace(/[^a-z0-9]/gi, ""), shape = a.shape;
