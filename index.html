@@ -310,6 +310,9 @@ button.rot-chip { font: inherit; color: var(--fg); text-align: left; cursor: poi
 button.rot-chip:active { transform: scale(0.98); }
 .rot-chip.today { border-color: var(--accent); background: rgba(46,229,157,0.12); box-shadow: 0 0 0 1px var(--accent), 0 0 22px -8px var(--accent-glow); }
 .rot-chip.today b { color: var(--accent-2); }
+.rot-chip.rot-leg { width: 100%; flex-direction: row; align-items: center; justify-content: space-between; padding: 12px 14px; }
+.rot-chip.rot-leg.today { border-color: #C6F26B; background: rgba(198,242,107,0.10); box-shadow: 0 0 0 1px #C6F26B, 0 0 22px -8px rgba(198,242,107,0.5); }
+.rot-chip.rot-leg.today b { color: #DDF7A0; }
 .rot-chip span.rot-up { color: var(--accent-2); font-weight: 500; }
 .ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
 @media (max-width: 520px) { .ach-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
@@ -329,6 +332,14 @@ button.rot-chip:active { transform: scale(0.98); }
 @keyframes achpop { 0% { transform: scale(0.85); box-shadow: 0 0 0 1px var(--accent), 0 0 40px -4px var(--accent-glow); } 40% { transform: scale(1.04); } 100% { transform: scale(1); box-shadow: none; } }
 @media (prefers-reduced-motion: reduce) { .ach.fresh { animation: none; } }
 .ach.on { cursor: pointer; }
+.ach.legend { grid-column: 1 / -1; padding: 18px 14px 18px; background: radial-gradient(90% 80% at 50% 25%, rgba(255,201,77,0.10), transparent 70%), rgba(255,255,255,0.02); border-color: rgba(255,201,77,0.22); }
+.ach.legend svg { width: 132px; }
+.ach.legend .ach-name { font-size: 17px; letter-spacing: 0.04em; text-transform: uppercase; }
+.ach.legend.on { border-color: rgba(255,201,77,0.5); box-shadow: 0 0 30px -10px rgba(255,201,77,0.5); }
+.ach.legend.on svg { filter: drop-shadow(0 8px 14px rgba(0,0,0,0.55)) drop-shadow(0 0 18px rgba(255,201,77,0.4)); }
+.ach-show.legend .ach-medal { width: 230px; }
+.ach-show.legend .ach-glow { animation-duration: 3.4s; }
+.ach-show.legend .ach-title { font-size: 36px; text-transform: uppercase; letter-spacing: 0.04em; }
 /* unlock celebration */
 .ach-show { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center;
   background: radial-gradient(circle at 50% 40%, rgba(20,20,24,0.88), rgba(5,5,6,0.96) 70%); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
@@ -349,10 +360,6 @@ button.rot-chip:active { transform: scale(0.98); }
 .ach-medal svg { width: 100%; height: auto; display: block; animation: achfloat 3.2s ease-in-out 1.3s infinite; }
 @keyframes achmedal { 0% { opacity: 0; transform: translateY(40px) scale(0.2) rotateY(100deg); } 55% { opacity: 1; transform: translateY(-6px) scale(1.12) rotateY(-14deg); } 75% { transform: translateY(0) scale(0.97) rotateY(6deg); } 100% { opacity: 1; transform: none; } }
 @keyframes achfloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-.ach-medal::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 35%, rgba(255,255,255,0.55) 48%, transparent 60%); mix-blend-mode: overlay;
-  -webkit-mask-image: radial-gradient(circle at 50% 60%, #000 45%, transparent 47%); mask-image: radial-gradient(circle at 50% 60%, #000 45%, transparent 47%);
-  transform: translateX(-120%); animation: achshine 1.2s ease-in-out 1s both; }
-@keyframes achshine { to { transform: translateX(120%); } }
 .ach-sparks { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
 .ach-sparks i { position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 50%; background: var(--mc); box-shadow: 0 0 10px var(--mc), 0 0 2px #fff;
   opacity: 0; animation: achspark 1.3s cubic-bezier(.15,.7,.3,1) both; }
@@ -364,6 +371,25 @@ button.rot-chip:active { transform: scale(0.98); }
 .ach-tap { position: absolute; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); font-size: 12px; color: var(--faint); animation: achup 0.6s ease-out 1.8s both; }
 @keyframes achup { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .ach-show *, .ach-show { animation-duration: 0.01s !important; animation-iteration-count: 1 !important; } }
+.cal-nav { display: flex; align-items: center; gap: 8px; }
+.cal-nav b { font-size: 14px; font-weight: 600; min-width: 112px; text-align: center; }
+.cal-nav .btn-sm { padding: 4px 12px; font-size: 16px; line-height: 1.2; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+.cal-wd { font-size: 11px; color: var(--faint); text-align: center; padding-bottom: 4px; }
+.cal-day { position: relative; aspect-ratio: 1 / 1.08; border-radius: 10px; border: 1px solid transparent; background: rgba(255,255,255,0.025); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 5px 2px 4px; gap: 3px; font: inherit; color: var(--muted); min-width: 0; cursor: default; }
+.cal-day.out { visibility: hidden; }
+.cal-day .n { font-size: 12.5px; font-variant-numeric: tabular-nums; line-height: 1; }
+.cal-day.today { border-color: rgba(255,255,255,0.35); color: var(--fg); }
+.cal-day.has { color: var(--fg); cursor: pointer; background: linear-gradient(180deg, color-mix(in srgb, var(--c1) 22%, transparent), color-mix(in srgb, var(--c2) 12%, transparent)); border-color: color-mix(in srgb, var(--c1) 45%, transparent); }
+.cal-day.has.sel { box-shadow: 0 0 0 2px var(--c1), 0 0 16px -4px var(--c1); }
+.cal-day .tag { font-size: 9.5px; font-weight: 700; letter-spacing: 0.02em; line-height: 1.05; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-day .dots { display: flex; gap: 3px; margin-top: auto; }
+.cal-day .dots i { width: 6px; height: 6px; border-radius: 50%; }
+.cal-foot { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--muted); }
+.cal-foot .cal-sel { color: var(--fg); }
+.cal-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; }
+.cal-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.cal-legend i { width: 8px; height: 8px; border-radius: 50%; }
 .rot-hist { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
 .rot-hist #rot-hist-body { margin-top: 10px; }
 .rot-hist form { margin-top: 12px; }
@@ -563,7 +589,7 @@ body.chart-open { padding-bottom: 32px; }
           <button type="button" class="menu-item" id="m-import">Daten importieren</button>
           <button type="button" class="menu-item" id="m-export">Backup herunterladen</button>
           <button type="button" class="menu-item danger" id="m-logout">Abmelden</button>
-          <div class="menu-ver">Version 24 · 13.11.2026</div>
+          <div class="menu-ver">Version 25 · 13.11.2026</div>
         </div>
       </details>
       <input type="file" id="import-file" accept="application/json,.json" hidden>
@@ -664,6 +690,16 @@ body.chart-open { padding-bottom: 32px; }
         <button type="submit" class="btn-dark">Nachtragen</button>
       </form>
     </details>
+  </section>
+
+  <!-- Training calendar -->
+  <section class="card" id="cal-card" aria-labelledby="cal-h" data-tabs="home training">
+    <div class="card-head">
+      <span class="label" id="cal-h">Trainingskalender</span>
+      <span class="cal-nav"><button class="btn-dark btn-sm" type="button" id="cal-prev" aria-label="Vorheriger Monat">‹</button><b id="cal-month"></b><button class="btn-dark btn-sm" type="button" id="cal-next" aria-label="Nächster Monat">›</button></span>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="cal-foot" id="cal-foot"></div>
   </section>
 
   <!-- Lifts -->
@@ -1161,17 +1197,27 @@ body.chart-open { padding-bottom: 32px; }
           var isT = sl.key === r.today;
           return '<button type="button" class="rot-chip' + (isT ? " today" : "") + '" data-rot="' + g + "|" + sl.key + '" aria-pressed="' + isT + '"><b>' + (isT ? "✓ " : "") + esc(sl.name) + "</b>" + (isT ? "<span>Heute gestartet</span>" : sl.key === r.next ? '<span class="rot-up">' + (r.today ? "Nächstes Mal" : "Als Nächstes") + "</span>" : "<span>" + sl.count + "× · " + agoText(sl.last) + "</span>") + "</button>";
         }).join("") + "</div></div>";
-    }).join("") + '<div class="rot-note">Tipp an, womit du heute anfängst. Nochmal tippen nimmt es zurück. Dran ist, womit du zuletzt am seltensten angefangen hast. Bei Gleichstand gewinnt, was am längsten her ist.</div>';
+    }).join("") + legdayRow() + '<div class="rot-note">Tipp an, womit du heute anfängst. Nochmal tippen nimmt es zurück. Dran ist, womit du zuletzt am seltensten angefangen hast. Bei Gleichstand gewinnt, was am längsten her ist.</div>';
+  }
+  function legdayRow() {
+    var G = GROUPS.filter(function (x) { return x.key === "legs"; })[0], today = todayISO();
+    var legs = state.rot.filter(function (r) { return r.group === "legs"; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    var isT = legs.some(function (r) { return r.date === today; }), last = legs.length ? legs[legs.length - 1].date : "";
+    var prev = legs.filter(function (r) { return r.date !== today; }), lastPrev = prev.length ? prev[prev.length - 1].date : "";
+    return '<div class="rot-group"><div class="rot-top"><span class="gdot" style="background:' + G.color + ";box-shadow:0 0 10px " + G.color + '"></span><span class="group-name">BEINE</span>' +
+      '<span class="rot-next">' + (isT ? "Heute Legday" : last ? "Zuletzt " + agoText(last) : "Noch kein Legday") + "</span></div>" +
+      '<button type="button" class="rot-chip rot-leg' + (isT ? " today" : "") + '" data-rot="legs|legday" aria-pressed="' + isT + '"><b>' + (isT ? "✓ Legday" : "Legday") + "</b><span>" +
+      (isT ? "Heute eingetragen" : legs.length + "× · " + agoText(lastPrev)) + "</span></button></div>";
   }
   $("rot-view").addEventListener("click", function (e) {
     var b = e.target.closest("[data-rot]"); if (!b || !backend) return;
     var parts = b.dataset.rot.split("|"), g = parts[0], slot = parts[1], today = todayISO(), id = "rot:" + g + ":" + today;
     var cur = state.rot.filter(function (r) { return r.id === id; })[0];
-    var name = ROTATION[g].filter(function (x) { return x.key === slot; })[0].name;
-    if (cur && cur.slot === slot) write(function () { return backend.remove("phase", id); }, "Start von heute zurückgenommen");
-    else write(function () { return backend.put("phase", id, { group: g, slot: slot, date: today, createdAt: Date.now() }); }, groupName(g) + " heute mit " + name + " gestartet");
+    var name = rotSlotName(g, slot);
+    if (cur && cur.slot === slot) write(function () { return backend.remove("phase", id); }, g === "legs" ? "Legday von heute zurückgenommen" : "Start von heute zurückgenommen");
+    else write(function () { return backend.put("phase", id, { group: g, slot: slot, date: today, createdAt: Date.now() }); }, g === "legs" ? "Legday für heute eingetragen" : groupName(g) + " heute mit " + name + " gestartet");
   });
-  function rotSlotName(g, k) { var x = (ROTATION[g] || []).filter(function (sl) { return sl.key === k; })[0]; return x ? x.name : k; }
+  function rotSlotName(g, k) { if (g === "legs") return "Legday"; var x = (ROTATION[g] || []).filter(function (sl) { return sl.key === k; })[0]; return x ? x.name : k; }
   function renderRotHistory() {
     if (!changed("roth", [state.rot])) return;
     var list = state.rot.slice().sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : a.group < b.group ? 1 : -1; });
@@ -1185,7 +1231,7 @@ body.chart-open { padding-bottom: 32px; }
     if (!$("rot-past-slot").options.length) {
       $("rot-past-slot").innerHTML = ["push", "pull"].map(function (g) {
         return '<optgroup label="' + groupName(g) + '">' + ROTATION[g].map(function (sl) { return '<option value="' + g + "|" + sl.key + '">' + groupName(g) + " · " + esc(sl.name) + "</option>"; }).join("") + "</optgroup>";
-      }).join("");
+      }).join("") + '<optgroup label="Beine"><option value="legs|legday">Beine · Legday</option></optgroup>';
     }
     $("rot-past-date").max = todayISO();
     if (!$("rot-past-date").value) $("rot-past-date").value = isoOffset(-1);
@@ -1203,7 +1249,52 @@ body.chart-open { padding-bottom: 32px; }
     var id = "rot:" + g + ":" + date, had = state.rot.some(function (x) { return x.id === id; });
     write(function () { return backend.put("phase", id, { group: g, slot: slot, date: date, createdAt: Date.now() }); }, (had ? "Geändert: " : "Nachgetragen: ") + fmtNum(date) + " · " + groupName(g) + " mit " + rotSlotName(g, slot));
   });
+  // ---------- training calendar: filled from what you tap in the rotation (and Legday) ----------
+  function monthKey(d) { return d.slice(0, 7); }
+  function renderCalendar() {
+    var today = todayISO();
+    if (!ui.calMonth) ui.calMonth = monthKey(today);
+    if (!changed("cal", [state.rot, ui.calMonth, ui.calSel, today])) return;
+    var y = +ui.calMonth.slice(0, 4), mo = +ui.calMonth.slice(5, 7), first = new Date(y, mo - 1, 1), days = new Date(y, mo, 0).getDate();
+    $("cal-month").textContent = first.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+    var byDay = {};
+    state.rot.forEach(function (r) { if (r.date && r.date.slice(0, 7) === ui.calMonth) (byDay[r.date] = byDay[r.date] || []).push(r); });
+    var order = { push: 0, pull: 1, legs: 2 }, col = {};
+    GROUPS.forEach(function (G) { col[G.key] = G.color; });
+    var cells = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map(function (w) { return '<div class="cal-wd">' + w + "</div>"; });
+    var lead = (first.getDay() + 6) % 7;
+    for (var i = 0; i < lead; i++) cells.push('<div class="cal-day out"></div>');
+    var count = { push: 0, pull: 0, legs: 0 }, trainDays = 0;
+    for (var d = 1; d <= days; d++) {
+      var iso = ui.calMonth + "-" + pad2(d), es = (byDay[iso] || []).sort(function (a, b) { return order[a.group] - order[b.group]; });
+      es.forEach(function (r) { if (count[r.group] != null) count[r.group]++; });
+      if (es.length) trainDays++;
+      var c1 = es.length ? col[es[0].group] : "", c2 = es.length ? col[es[es.length - 1].group] : "";
+      var tag = es.length ? (es.length > 1 ? es.map(function (r) { return groupName(r.group).charAt(0); }).join("+") : es[0].group === "legs" ? "Beine" : rotSlotName(es[0].group, es[0].slot)) : "";
+      cells.push('<button type="button" class="cal-day' + (es.length ? " has" : "") + (iso === today ? " today" : "") + (ui.calSel === iso ? " sel" : "") + '"' +
+        (es.length ? ' data-cal="' + iso + '" style="--c1:' + c1 + ";--c2:" + c2 + '"' : " disabled") + ' aria-label="' + fmtNum(iso) + (es.length ? ": " + es.map(function (r) { return groupName(r.group); }).join(", ") : "") + '">' +
+        '<span class="n">' + d + "</span>" + (tag ? '<span class="tag" style="color:' + c1 + '">' + esc(tag) + "</span>" : "") +
+        (es.length ? '<span class="dots">' + es.map(function (r) { return '<i style="background:' + col[r.group] + '"></i>'; }).join("") + "</span>" : "") + "</button>");
+    }
+    $("cal-grid").innerHTML = cells.join("");
+    var sel = ui.calSel && byDay[ui.calSel], selLine = "";
+    if (sel) selLine = '<div class="cal-sel"><b>' + esc(fmtDate(ui.calSel, { weekday: "long", day: "numeric", month: "long" })) + "</b> · " +
+      sel.map(function (r) { return r.group === "legs" ? "Legday" : groupName(r.group) + " (Start " + rotSlotName(r.group, r.slot) + ")"; }).join(" · ") + "</div>";
+    $("cal-foot").innerHTML = selLine + '<div class="cal-legend">' + GROUPS.map(function (G) { return '<span><i style="background:' + G.color + '"></i>' + G.name + " " + count[G.key] + "×</span>"; }).join("") +
+      "<span>" + trainDays + (trainDays === 1 ? " Trainingstag" : " Trainingstage") + "</span></div>";
+  }
+  function calShift(n) {
+    var y = +ui.calMonth.slice(0, 4), m = +ui.calMonth.slice(5, 7) - 1 + n, d = new Date(y, m, 1);
+    ui.calMonth = d.getFullYear() + "-" + pad2(d.getMonth() + 1); ui.calSel = null; renderCalendar();
+  }
+  $("cal-prev").addEventListener("click", function () { calShift(-1); });
+  $("cal-next").addEventListener("click", function () { calShift(1); });
+  $("cal-grid").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-cal]"); if (!b) return;
+    ui.calSel = ui.calSel === b.dataset.cal ? null : b.dataset.cal; renderCalendar();
+  });
   function rotationHint(g) {
+    if (g === "legs") return state.rot.some(function (r) { return r.group === "legs" && r.date === todayISO(); }) ? "Heute Legday · " : "";
     if (!ROTATION[g]) return "";
     var r = rotationFor(g), nx = r.slots.filter(function (x) { return x.key === (r.today || r.next); })[0];
     return nx ? (r.today ? "Heute " : "Start: ") + nx.name + " · " : "";
@@ -1231,7 +1322,9 @@ body.chart-open { padding-bottom: 32px; }
     platinum: ["#FFFFFF", "#DCE1E8", "#8C96A2", "#363C45"],
     royal:    ["#F6F0FF", "#C3AEFF", "#6E55C9", "#261857"],
     bronze:   ["#FFEBDD", "#EBA676", "#A35E2A", "#40200A"],
-    ice:      ["#F4FCFF", "#C6EBFF", "#6AA9D2", "#1E3E57"]
+    ice:      ["#F4FCFF", "#C6EBFF", "#6AA9D2", "#1E3E57"],
+    silver:   ["#FFFFFF", "#E4E8EE", "#9AA3AE", "#454B54"],
+    endboss:  ["#FFF3C4", "#FFC94D", "#C2410C", "#2A0A04"]
   };
   // simple line pictograms, drawn in a 40x40 box centred on 0,0
   var ACH_ICONS = {
@@ -1247,6 +1340,9 @@ body.chart-open { padding-bottom: 32px; }
     year: '<text x="0" y="6" text-anchor="middle" font-size="22" font-weight="800" font-family="Inter Tight, Inter, sans-serif" stroke="none" fill="currentColor">365</text><text x="0" y="17" text-anchor="middle" font-size="6.5" font-weight="700" letter-spacing="1.6" font-family="Inter, sans-serif" stroke="none" fill="currentColor">TAGE</text>',
     rotation: '<path d="M12 -8a14 14 0 0 0 -24 2"/><path d="M-12 8a14 14 0 0 0 24 -2"/><path d="M-14 -11v6h6M14 11v-6h-6"/><text x="0" y="4" text-anchor="middle" font-size="10" font-weight="800" font-family="Inter, sans-serif" stroke="none" fill="currentColor">25</text>',
     phases: '<path d="M-12 8l12 -8 12 8M-12 0l12 -8 12 8M-12 -8l12 -8 12 8"/>',
+    crown: '<path d="M-15 8l-3 -16 9 8 9 -14 9 14 9 -8 -3 16z" stroke="none" fill="currentColor"/><path d="M-15 12h30" stroke-width="3"/><g stroke="none" fill="#0D0D0F"><circle cx="0" cy="1" r="2.4"/><circle cx="-8" cy="3" r="1.6"/><circle cx="8" cy="3" r="1.6"/></g><circle cx="-18" cy="-9" r="1.8" stroke="none" fill="currentColor"/><circle cx="18" cy="-9" r="1.8" stroke="none" fill="currentColor"/><circle cx="0" cy="-15" r="2" stroke="none" fill="currentColor"/>',
+    trio: '<g stroke="none" fill="currentColor"><rect x="-17" y="-9" width="7" height="18" rx="2.4"/><rect x="-9" y="-13" width="7" height="26" rx="2.4"/><rect x="2" y="-13" width="7" height="26" rx="2.4"/><rect x="10" y="-9" width="7" height="18" rx="2.4"/></g><path d="M-19 0h38" stroke-width="2.6"/>',
+    half: '<path d="M-14 -4a14 14 0 0 1 28 0z" stroke="none" fill="currentColor"/><path d="M-16 -4h32" stroke-width="2"/><path d="M0 4v12M-5 11l5 5 5 -5" stroke-width="2.4"/>',
     bulk: '<g transform="translate(2.6 -0.4) scale(1.06)"><path stroke="none" fill="currentColor" d="M-14.5 -11.2 L-12.6 -13.6 Q-10 -15.4 -6.6 -16 L-5.6 -18.6 Q-3.6 -19.6 -2.4 -17.6 L-2.2 -16 Q3.6 -15.4 6.4 -10.4 Q10.6 -5.2 10.6 2 Q11.4 8.4 8.6 12.4 L9.6 17.6 Q9.4 18.6 8.2 18.6 L2.6 18.6 Q1.6 18.4 2.2 17.2 L3.4 15.2 Q0.4 14.4 -1.6 14.6 L-1.4 17.4 Q-1.6 18.6 -2.8 18.6 L-7.4 18.6 Q-8.4 18.4 -7.8 17.2 L-6.4 13.4 Q-8.6 8 -7.6 1.6 L-10.6 -1.6 L-13.8 -1.2 L-16.6 -3 L-13.8 -3.4 L-16.8 -5.2 L-13.4 -5.4 L-15.6 -7.6 L-11.8 -6.6 L-8.4 -4.6 Q-7.8 -7.2 -9.4 -8.4 L-12.4 -8.6 L-13.4 -10.2 L-11.6 -10.4 Z"/><circle cx="-8.6" cy="-13.2" r="0.9" stroke="none" fill="#0D0D0F"/><path d="M-13.2 -10.2 L-11.8 -9.4 L-12.8 -8.8" stroke="#0D0D0F" stroke-width="0.8"/><path d="M2 -6 Q5 0 3 6 M-3 2 Q-2 7 -3.6 11" stroke="#0D0D0F" stroke-width="0.9" opacity=".45"/></g>',
     cut: '<path d="M-13 -17 C-14.5 -3 -12 8 0 18 C12 8 14.5 -3 13 -17" stroke-width="1.8"/><g stroke="none" fill="currentColor"><rect x="-8.6" y="-13" width="7.4" height="7" rx="2.6"/><rect x="1.2" y="-13" width="7.4" height="7" rx="2.6"/><rect x="-8.2" y="-4.4" width="7" height="6.8" rx="2.5"/><rect x="1.2" y="-4.4" width="7" height="6.8" rx="2.5"/><rect x="-7.4" y="4" width="6.2" height="6.4" rx="2.4"/><rect x="1.2" y="4" width="6.2" height="6.4" rx="2.4"/></g><path d="M-10.5 11.5 L-2 17 M10.5 11.5 L2 17" stroke-width="1.6"/>'
   };
@@ -1297,6 +1393,17 @@ body.chart-open { padding-bottom: 32px; }
     } else if (shape === "hex") {
       body = '<polygon points="' + poly(6, 47) + '" fill="' + G + '"/><polygon points="' + poly(6, 41) + '" fill="none" stroke="' + m[0] + '" stroke-opacity=".55"/>';
       face = 32;
+    } else if (shape === "star") {
+      body = '<polygon points="' + poly(10, 50, 41) + '" fill="' + G + '"/><circle cx="60" cy="80" r="38" fill="none" stroke="' + m[0] + '" stroke-opacity=".5"/>';
+      face = 32;
+    } else if (shape === "round") {
+      body = '<circle cx="60" cy="80" r="46" fill="' + G + '"/><circle cx="60" cy="80" r="41" fill="none" stroke="' + m[3] + '" stroke-opacity=".5" stroke-width="2"/><circle cx="60" cy="80" r="38.5" fill="none" stroke="' + m[0] + '" stroke-opacity=".6"/>';
+      face = 32;
+    } else if (shape === "crest") {
+      // legendary: spiked sunburst behind a double ring
+      body = '<polygon points="' + poly(16, 54, 40) + '" fill="' + R + '" opacity=".9"/><polygon points="' + poly(8, 50, 36, Math.PI / 8) + '" fill="' + G + '"/>' +
+        '<circle cx="60" cy="80" r="40" fill="' + G + '"/><circle cx="60" cy="80" r="40" fill="none" stroke="' + m[3] + '" stroke-width="2"/><circle cx="60" cy="80" r="36.5" fill="none" stroke="' + m[0] + '" stroke-opacity=".7"/>';
+      face = 32;
     } else if (shape === "diamond") {
       body = '<polygon points="' + poly(4, 50) + '" fill="' + G + '"/><polygon points="' + poly(4, 43) + '" fill="none" stroke="' + m[0] + '" stroke-opacity=".55"/>';
       face = 27;
@@ -1313,8 +1420,7 @@ body.chart-open { padding-bottom: 32px; }
     backend.put("phase", phaseDoneId(p), { type: p.type, start: p.start, end: p.end, createdAt: Date.now() });
   }
   function achievements() {
-    var today = todayISO(), out = [];
-    // long-term ones first
+    var today = todayISO(), out = [], maxed = [];
     var dYear = Math.round((parseISO(today) - parseISO(GYM_START)) / DAY);
     out.push({ id: "year", name: "1 Jahr Gym", desc: "Ein Jahr im Gym, seit dem 09.03.2026", metal: "gold", shape: "laurel", icon: "year",
       done: today >= GYM_YEAR ? GYM_YEAR : "", cur: Math.min(365, Math.max(0, dYear)), max: 365, unit: "Tage" });
@@ -1337,6 +1443,17 @@ body.chart-open { padding-bottom: 32px; }
       done: fb ? fb.end : "", hint: pLeft("bulk") != null ? "Noch " + pLeft("bulk") + " Tage im Bulk" : "Starte und beende einen Bulk" });
     out.push({ id: "cut1", name: "Lean ist Law", desc: "Deinen ersten Cut abgeschlossen", metal: "ice", shape: "diamond", icon: "cut",
       done: fc ? fc.end : "", hint: pLeft("cut") != null ? "Noch " + pLeft("cut") + " Tage im Cut" : "Starte und beende einen Cut" });
+    // cut progress: biggest drop from your heaviest weight so far down to a later weigh-in
+    var peak = 0, drop = 0, dropAt = {};
+    bwSorted().forEach(function (e) {
+      peak = Math.max(peak, e.kg); var dd = peak - e.kg;
+      if (dd > drop) drop = dd;
+      [5, 10, 15].forEach(function (t) { if (!dropAt[t] && dd >= t - 1e-9) dropAt[t] = e.date; });
+    });
+    [[5, "Bronze", "bronze"], [10, "Silber", "silver"], [15, "Gold", "gold"]].forEach(function (t) {
+      out.push({ id: "half" + t[0], name: "Halbe Portion · " + t[1], desc: t[0] + " kg runtergecuttet (vom Höchstgewicht aus)", metal: t[2], shape: "round", icon: "half",
+        done: dropAt[t[0]] || "", cur: Math.min(t[0], Math.round(drop * 10) / 10), max: t[0], unit: "kg runter" });
+    });
     // machine max weights
     ACH_MAX.forEach(function (a) {
       var ids = state.exercises.filter(function (ex) { return a.re.test(ex.name); }).map(function (ex) { return ex.id; });
@@ -1345,10 +1462,19 @@ body.chart-open { padding-bottom: 32px; }
         if (l.weight > best) best = l.weight;
         if (!first && l.weight >= a.kg) first = l.date;
       });
+      maxed.push({ id: a.id, group: a.group, done: first });
       out.push({ id: a.id, name: a.name + " Maxxed Out", desc: "Maximalgewicht an der Maschine: " + a.kg + " kg", metal: a.group, shape: "plate", icon: a.icon, kg: a.kg,
         done: first, cur: Math.min(a.kg, best), max: a.kg, unit: "kg", missing: !ids.length });
     });
-    return out;
+    // group sets + the big one
+    function setDone(list) { if (!list.length || list.some(function (x) { return !x.done; })) return ""; return list.map(function (x) { return x.done; }).sort().pop(); }
+    var sets = [["push", "Push Perfect", "Brustpresse, Butterfly und Seitheben Maxxed Out"], ["pull", "Pull Perfect", "Latzug, Breites Rudern und Rudern Maxxed Out"], ["legs", "Leg Legend", "Beinpresse, Waden und Beinbeuger Maxxed Out"]].map(function (g) {
+      var inG = maxed.filter(function (x) { return x.group === g[0]; });
+      return { id: "set-" + g[0], name: g[1], desc: g[2], metal: g[0], shape: "star", icon: "trio", done: setDone(inG), cur: inG.filter(function (x) { return x.done; }).length, max: inG.length, unit: "Maschinen" };
+    });
+    var boss = { id: "endboss", name: "Endboss", desc: "Alle 9 Maschinen Maxxed Out", metal: "endboss", shape: "crest", icon: "crown", legend: true,
+      done: setDone(maxed), cur: maxed.filter(function (x) { return x.done; }).length, max: maxed.length, unit: "Maschinen" };
+    return [boss].concat(sets, out);
   }
   // full-screen unlock moment: medal flies in, glow + rays + sparks, then name and description
   var achQueue = [], achTimer = null;
@@ -1361,11 +1487,13 @@ body.chart-open { padding-bottom: 32px; }
     if (!a) { el.hidden = true; return; }
     el.classList.remove("out");
     el.style.setProperty("--mc", METALS[a.metal][1]);
+    el.classList.toggle("legend", !!a.legend);
+    el.querySelector(".ach-kicker").textContent = a.legend ? "Legendärer Erfolg" : "Erfolg freigeschaltet";
     $("ach-show-medal").innerHTML = medalSVG(Object.assign({}, a, { id: a.id + "big" }), true);
     $("ach-show-name").textContent = a.name;
     $("ach-show-desc").textContent = a.desc;
     var sp = "";
-    for (var i = 0; i < 26; i++) {
+    for (var i = 0; i < (a.legend ? 60 : 26); i++) {
       var ang = Math.random() * Math.PI * 2, dist = 90 + Math.random() * 120;
       sp += '<i class="' + (i % 3 ? "" : "st") + '" style="--dx:' + (Math.cos(ang) * dist).toFixed(0) + "px;--dy:" + (Math.sin(ang) * dist).toFixed(0) + "px;animation-delay:" + (0.45 + Math.random() * 0.35).toFixed(2) + 's"></i>';
     }
@@ -1404,9 +1532,9 @@ body.chart-open { padding-bottom: 32px; }
       else if (a.missing) sub = '<span class="ach-prog">Übung fehlt noch in deiner Liste</span>';
       else if (a.max) {
         var pct = Math.max(0, Math.min(100, a.cur / a.max * 100));
-        sub = '<span class="ach-bar"><i style="width:' + pct.toFixed(1) + '%"></i></span><span class="ach-prog">' + (a.unit === "kg" ? kg(a.cur, 1) + " / " + a.max + " kg" : a.unit === "Tage" ? "Noch " + (a.max - a.cur) + " Tage" : a.cur + " / " + a.max + " " + a.unit) + "</span>";
+        sub = '<span class="ach-bar"><i style="width:' + pct.toFixed(1) + '%"></i></span><span class="ach-prog">' + (a.unit === "kg" ? kg(a.cur, 1) + " / " + a.max + " kg" : a.unit === "kg runter" ? kg(a.cur, 1) + " / " + a.max + " kg runter" : a.unit === "Tage" ? "Noch " + (a.max - a.cur) + " Tage" : a.cur + " / " + a.max + " " + a.unit) + "</span>";
       } else sub = '<span class="ach-prog">' + esc(a.hint || "") + "</span>";
-      return '<div class="ach' + (on ? " on" : " locked") + (fresh.indexOf(a.id) >= 0 ? " fresh" : "") + '" data-ach="' + esc(a.id) + '" title="' + esc(a.desc) + '">' + medalSVG(a, on) +
+      return '<div class="ach' + (on ? " on" : " locked") + (a.legend ? " legend" : "") + (fresh.indexOf(a.id) >= 0 ? " fresh" : "") + '" data-ach="' + esc(a.id) + '" title="' + esc(a.desc) + '">' + medalSVG(a, on) +
         '<b class="ach-name">' + esc(a.name) + '</b><span class="ach-desc">' + esc(a.desc) + "</span>" + sub + "</div>";
     }).join("");
     if (fresh.length) celebrate(list.filter(function (a) { return fresh.indexOf(a.id) >= 0; }));
@@ -1693,7 +1821,7 @@ body.chart-open { padding-bottom: 32px; }
   document.body.setAttribute("data-tab", ui.tab);
   document.querySelectorAll("[data-tab-btn]").forEach(function (b) { if (b.dataset.tabBtn === ui.tab) b.setAttribute("aria-current", "page"); });
 
-  function render() { if (ui.page) renderChartPage(); else { renderReview(); renderRotation(); renderRotHistory(); renderPhase(); renderBw(); renderExercises(); renderMilestones(); renderAchievements(); renderPhotos(); } }
+  function render() { if (ui.page) renderChartPage(); else { renderReview(); renderRotation(); renderRotHistory(); renderCalendar(); renderPhase(); renderBw(); renderExercises(); renderMilestones(); renderAchievements(); renderPhotos(); } }
 
   // ---------- rest timer ----------
   var timer = lsGet("gymlog.timer") || { endAt: 0, total: 210, label: "", doneAt: 0 };
