@@ -332,6 +332,9 @@ button.rot-chip:active { transform: scale(0.98); }
 @keyframes achpop { 0% { transform: scale(0.85); box-shadow: 0 0 0 1px var(--accent), 0 0 40px -4px var(--accent-glow); } 40% { transform: scale(1.04); } 100% { transform: scale(1); box-shadow: none; } }
 @media (prefers-reduced-motion: reduce) { .ach.fresh { animation: none; } }
 .ach.on { cursor: pointer; }
+.ach-tiers { display: flex; gap: 6px; margin: -2px 0 4px; }
+.ach-tiers i { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--tc); opacity: 0.45; }
+.ach-tiers i.got { background: var(--tc); opacity: 1; box-shadow: 0 0 8px var(--tc); }
 .ach.legend { grid-column: 1 / -1; padding: 18px 14px 18px; background: radial-gradient(90% 80% at 50% 25%, rgba(255,201,77,0.10), transparent 70%), rgba(255,255,255,0.02); border-color: rgba(255,201,77,0.22); }
 .ach.legend svg { width: 132px; }
 .ach.legend .ach-name { font-size: 17px; letter-spacing: 0.04em; text-transform: uppercase; }
@@ -589,7 +592,7 @@ body.chart-open { padding-bottom: 32px; }
           <button type="button" class="menu-item" id="m-import">Daten importieren</button>
           <button type="button" class="menu-item" id="m-export">Backup herunterladen</button>
           <button type="button" class="menu-item danger" id="m-logout">Abmelden</button>
-          <div class="menu-ver">Version 25 · 13.11.2026</div>
+          <div class="menu-ver">Version 26 · 13.11.2026</div>
         </div>
       </details>
       <input type="file" id="import-file" accept="application/json,.json" hidden>
@@ -1450,10 +1453,17 @@ body.chart-open { padding-bottom: 32px; }
       if (dd > drop) drop = dd;
       [5, 10, 15].forEach(function (t) { if (!dropAt[t] && dd >= t - 1e-9) dropAt[t] = e.date; });
     });
-    [[5, "Bronze", "bronze"], [10, "Silber", "silver"], [15, "Gold", "gold"]].forEach(function (t) {
-      out.push({ id: "half" + t[0], name: "Halbe Portion · " + t[1], desc: t[0] + " kg runtergecuttet (vom Höchstgewicht aus)", metal: t[2], shape: "round", icon: "half",
-        done: dropAt[t[0]] || "", cur: Math.min(t[0], Math.round(drop * 10) / 10), max: t[0], unit: "kg runter" });
+    // one stacked medal: shows the best tier you have, with progress to the next one
+    var tiers = [[5, "Bronze", "bronze"], [10, "Silber", "silver"], [15, "Gold", "gold"]].map(function (t) {
+      return { id: "half" + t[0], name: "Halbe Portion · " + t[1], tier: t[1], desc: t[0] + " kg runtergecuttet (vom Höchstgewicht aus)", metal: t[2], shape: "round", icon: "half",
+        done: dropAt[t[0]] || "", cur: Math.min(t[0], Math.round(drop * 10) / 10), max: t[0], unit: "kg runter" };
     });
+    var have = tiers.filter(function (t) { return t.done; }), nextT = tiers.filter(function (t) { return !t.done; })[0];
+    var shown = Object.assign({}, have.length ? have[have.length - 1] : tiers[0]);
+    shown.tiers = tiers.map(function (t) { return { metal: t.metal, done: !!t.done, tier: t.tier }; });
+    if (have.length && nextT) shown.next = { tier: nextT.tier, cur: nextT.cur, max: nextT.max };
+    shown.allTiers = tiers;
+    out.push(shown);
     // machine max weights
     ACH_MAX.forEach(function (a) {
       var ids = state.exercises.filter(function (ex) { return a.re.test(ex.name); }).map(function (ex) { return ex.id; });
@@ -1528,13 +1538,15 @@ body.chart-open { padding-bottom: 32px; }
     }
     $("ach-grid").innerHTML = list.map(function (a) {
       var on = !!a.done, sub;
-      if (on) sub = '<span class="ach-when">Freigeschaltet am ' + fmtNum(a.done) + "</span>";
+      if (on) sub = '<span class="ach-when">Freigeschaltet am ' + fmtNum(a.done) + "</span>" +
+        (a.next ? '<span class="ach-bar"><i style="width:' + Math.max(0, Math.min(100, a.next.cur / a.next.max * 100)).toFixed(1) + '%"></i></span><span class="ach-prog">' + a.next.tier + ": " + kg(a.next.cur, 1) + " / " + a.next.max + " kg runter</span>" : "");
       else if (a.missing) sub = '<span class="ach-prog">Übung fehlt noch in deiner Liste</span>';
       else if (a.max) {
         var pct = Math.max(0, Math.min(100, a.cur / a.max * 100));
         sub = '<span class="ach-bar"><i style="width:' + pct.toFixed(1) + '%"></i></span><span class="ach-prog">' + (a.unit === "kg" ? kg(a.cur, 1) + " / " + a.max + " kg" : a.unit === "kg runter" ? kg(a.cur, 1) + " / " + a.max + " kg runter" : a.unit === "Tage" ? "Noch " + (a.max - a.cur) + " Tage" : a.cur + " / " + a.max + " " + a.unit) + "</span>";
       } else sub = '<span class="ach-prog">' + esc(a.hint || "") + "</span>";
       return '<div class="ach' + (on ? " on" : " locked") + (a.legend ? " legend" : "") + (fresh.indexOf(a.id) >= 0 ? " fresh" : "") + '" data-ach="' + esc(a.id) + '" title="' + esc(a.desc) + '">' + medalSVG(a, on) +
+        (a.tiers ? '<span class="ach-tiers">' + a.tiers.map(function (t) { return '<i class="' + (t.done ? "got" : "") + '" style="--tc:' + METALS[t.metal][1] + '" title="' + t.tier + '"></i>'; }).join("") + "</span>" : "") +
         '<b class="ach-name">' + esc(a.name) + '</b><span class="ach-desc">' + esc(a.desc) + "</span>" + sub + "</div>";
     }).join("");
     if (fresh.length) celebrate(list.filter(function (a) { return fresh.indexOf(a.id) >= 0; }));
