@@ -518,7 +518,7 @@ body.chart-open { padding-bottom: 32px; }
           <button type="button" class="menu-item" id="m-import">Daten importieren</button>
           <button type="button" class="menu-item" id="m-export">Backup herunterladen</button>
           <button type="button" class="menu-item danger" id="m-logout">Abmelden</button>
-          <div class="menu-ver">Version 21 · 13.11.2026</div>
+          <div class="menu-ver">Version 22 · 13.11.2026</div>
         </div>
       </details>
       <input type="file" id="import-file" accept="application/json,.json" hidden>
@@ -1214,7 +1214,7 @@ body.chart-open { padding-bottom: 32px; }
     var today = todayISO(), out = [];
     // long-term ones first
     var dYear = Math.round((parseISO(today) - parseISO(GYM_START)) / DAY);
-    out.push({ id: "year", name: "Ein Jahr Eisen", desc: "Ein Jahr im Gym, seit dem 09.03.2026", metal: "gold", shape: "laurel", icon: "year",
+    out.push({ id: "year", name: "1 Jahr Gym", desc: "Ein Jahr im Gym, seit dem 09.03.2026", metal: "gold", shape: "laurel", icon: "year",
       done: today >= GYM_YEAR ? GYM_YEAR : "", cur: Math.min(365, Math.max(0, dYear)), max: 365, unit: "Tage" });
     // rotation veteran: 25 full rounds in push and in pull (a round = every start once)
     var counts = { push: {}, pull: {} }, vetDate = "", rounds = function (g) { return Math.min.apply(null, ROTATION[g].map(function (sl) { return counts[g][sl.key] || 0; })); };
@@ -1231,9 +1231,9 @@ body.chart-open { padding-bottom: 32px; }
       done: cb.length >= 3 ? cb[2].end : "", cur: Math.min(3, cb.length), max: 3, unit: "Phasen" });
     var fb = fin.filter(function (p) { return p.type === "bulk"; })[0], fc = fin.filter(function (p) { return p.type === "cut"; })[0];
     var curP = state.phase, pLeft = function (t) { return curP && curP.type === t && curP.end > today ? Math.max(0, Math.round((parseISO(curP.end) - parseISO(today)) / DAY)) : null; };
-    out.push({ id: "bulk1", name: "Masse-Macher", desc: "Deinen ersten Bulk abgeschlossen", metal: "bronze", shape: "hex", icon: "bulk",
+    out.push({ id: "bulk1", name: "Masse ist Macht", desc: "Deinen ersten Bulk abgeschlossen", metal: "bronze", shape: "hex", icon: "bulk",
       done: fb ? fb.end : "", hint: pLeft("bulk") != null ? "Noch " + pLeft("bulk") + " Tage im Bulk" : "Starte und beende einen Bulk" });
-    out.push({ id: "cut1", name: "Messerscharf", desc: "Deinen ersten Cut abgeschlossen", metal: "ice", shape: "diamond", icon: "cut",
+    out.push({ id: "cut1", name: "Lean ist Law", desc: "Deinen ersten Cut abgeschlossen", metal: "ice", shape: "diamond", icon: "cut",
       done: fc ? fc.end : "", hint: pLeft("cut") != null ? "Noch " + pLeft("cut") + " Tage im Cut" : "Starte und beende einen Cut" });
     // machine max weights
     ACH_MAX.forEach(function (a) {
