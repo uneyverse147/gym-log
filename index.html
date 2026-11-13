@@ -366,6 +366,19 @@ button.rot-chip:active { transform: scale(0.98); }
 @keyframes achpop { 0% { transform: scale(0.85); box-shadow: 0 0 0 1px var(--accent), 0 0 40px -4px var(--accent-glow); } 40% { transform: scale(1.04); } 100% { transform: scale(1); box-shadow: none; } }
 @media (prefers-reduced-motion: reduce) { .ach.fresh { animation: none; } }
 .ach.on { cursor: pointer; }
+.kab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 12px; }
+.kab-item { font: inherit; color: var(--fg); background: none; border: 0; padding: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; cursor: pointer; text-align: left; }
+.kab-thumb { width: 100%; aspect-ratio: 9 / 16; border-radius: 12px; border: 1px solid var(--line-strong); background: #0E0E10 center / cover no-repeat; box-shadow: 0 12px 24px -12px rgba(0,0,0,0.8); transition: transform 0.2s; }
+.kab-item:hover .kab-thumb, .kab-item:focus-visible .kab-thumb { transform: translateY(-3px); border-color: rgba(46,229,157,0.5); }
+.kab-item b { font-size: 13px; font-weight: 600; }
+.kab-item > span:last-child { font-size: 11px; color: var(--muted); }
+.story { position: fixed; inset: 0; z-index: 48; background: rgba(5,5,6,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: calc(12px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)); }
+.story[hidden] { display: none; }
+.story-bar { width: min(420px, 100%); display: flex; align-items: center; justify-content: space-between; }
+.story-bar b { font-size: 15px; }
+.story-bar .x { font-size: 26px; }
+.story img { max-height: calc(100vh - 170px); max-width: 100%; aspect-ratio: 9 / 16; border-radius: 18px; border: 1px solid var(--line-strong); box-shadow: 0 30px 60px -20px rgba(0,0,0,0.9), 0 0 50px -20px var(--accent-glow); background: #0E0E10; }
+.story .pill-btn { min-width: 200px; justify-content: center; }
 .bk { position: fixed; inset: 0; z-index: 45; background: rgba(5,5,6,0.8); display: grid; place-items: center; padding: 16px; }
 .bk[hidden] { display: none; }
 .bk-card { width: min(520px, 100%); max-height: 85vh; overflow: auto; }
@@ -650,7 +663,7 @@ body.chart-open { padding-bottom: 32px; }
           <button type="button" class="menu-item" id="m-export">Backup herunterladen</button>
           <button type="button" class="menu-item" id="m-backups">Automatische Backups</button>
           <button type="button" class="menu-item danger" id="m-logout">Abmelden</button>
-          <div class="menu-ver">Version 28 · 13.11.2026</div>
+          <div class="menu-ver">Version 29 · 13.11.2026</div>
         </div>
       </details>
       <input type="file" id="import-file" accept="application/json,.json" hidden>
@@ -804,6 +817,15 @@ body.chart-open { padding-bottom: 32px; }
     <div class="ach-grid" id="ach-grid"></div>
   </section>
 
+  <!-- Cabinet: monthly stories -->
+  <section class="card" id="kab-card" aria-labelledby="kab-h" data-tabs="erfolge">
+    <div class="card-head">
+      <span class="label" id="kab-h">Kabinett</span>
+      <span class="sub" style="font-size:12px">Deine Monatsrückblicke</span>
+    </div>
+    <div class="kab-grid" id="kab-grid"></div>
+  </section>
+
   <!-- Progress photos -->
   <section class="card" id="ph-card" aria-labelledby="ph-h" data-tabs="home fotos">
     <div class="card-head">
@@ -868,6 +890,11 @@ body.chart-open { padding-bottom: 32px; }
 </nav>
 <div class="t-float" id="t-float" hidden role="timer" aria-live="off"><span class="t-float-dot"></span><b id="t-float-num">0:00</b><span class="t-float-label" id="t-float-label"></span><button class="btn-dark btn-sm" id="t-float-stop" type="button">Stopp</button></div>
 <div class="toast" id="toast" hidden></div>
+<div class="story" id="story" hidden role="dialog" aria-modal="true" aria-labelledby="story-title">
+  <div class="story-bar"><b id="story-title"></b><button class="x" type="button" id="story-close" aria-label="Schließen">×</button></div>
+  <img id="story-img" alt="Monatsrückblick als Bild">
+  <button class="pill-btn good" type="button" id="story-save">Bild speichern</button>
+</div>
 <div class="bk" id="bk" hidden role="dialog" aria-modal="true" aria-labelledby="bk-h">
   <div class="bk-card card">
     <div class="card-head"><span class="label" id="bk-h">Automatische Backups</span><button class="x" type="button" id="bk-close" aria-label="Schließen">×</button></div>
@@ -1700,6 +1727,176 @@ body.chart-open { padding-bottom: 32px; }
     if (fresh.length) celebrate(list.filter(function (a) { return fresh.indexOf(a.id) >= 0; }));
   }
 
+  // ---------- monthly story (1080x1920 image) + cabinet of all months ----------
+  function monthData(mk) {
+    var start = mk + "-01", end = mk + "-31";
+    var inM = function (d) { return d && d >= start && d <= end; };
+    var rot = state.rot.filter(function (r) { return inM(r.date); }), days = {}, by = { push: 0, pull: 0, legs: 0 };
+    rot.forEach(function (r) { days[r.date] = 1; if (by[r.group] != null) by[r.group]++; });
+    var prs = [];
+    state.exercises.forEach(function (ex) {
+      // one line per exercise: best record this month, gain vs. the best before the month
+      var ss = sessionsFor(ex.id), before = 0, top = 0, any = false;
+      ss.forEach(function (s) {
+        if (s.date < start) before = Math.max(before, s.top);
+        else if (inM(s.date) && s.pr) { any = true; top = Math.max(top, s.top); }
+      });
+      if (any) prs.push({ name: ex.name, kg: top, gain: before ? top - before : 0 });
+    });
+    prs.sort(function (a, b) { return b.gain - a.gain; });
+    var all = achievements();
+    var medals = all.filter(function (a) { return inM(a.done); });
+    var open = all.filter(function (a) { return !a.done && a.max && a.cur < a.max && !a.missing; })
+      .sort(function (a, b) { return b.cur / b.max - a.cur / a.max; })[0] || null;
+    var bw = bwSorted().filter(function (e) { return inM(e.date); });
+    return { mk: mk, days: Object.keys(days).length, by: by, prs: prs, medals: medals, next: open, bw: bw };
+  }
+  function storyMonths() {
+    var first = "";
+    state.rot.concat(state.lifts, state.bw).forEach(function (x) { if (x.date && (!first || x.date < first)) first = x.date; });
+    if (!first) return [];
+    var out = [], y = +first.slice(0, 4), m = +first.slice(5, 7), cur = todayISO().slice(0, 7);
+    while (true) { var k = y + "-" + pad2(m); out.push(k); if (k >= cur) break; m++; if (m > 12) { m = 1; y++; } }
+    return out.reverse();
+  }
+  function monthLabel(mk, opt) { return new Date(+mk.slice(0, 4), +mk.slice(5, 7) - 1, 1).toLocaleDateString("de-DE", opt || { month: "long", year: "numeric" }); }
+  function svgImage(svg, w, h) {
+    return new Promise(function (res) {
+      var img = new Image();
+      img.onload = function () { res(img); }; img.onerror = function () { res(null); };
+      img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" '));
+    });
+  }
+  function rrect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+  function fitText(c, t, maxW) { if (c.measureText(t).width <= maxW) return t; while (t.length > 1 && c.measureText(t + "…").width > maxW) t = t.slice(0, -1); return t + "…"; }
+  var storyCache = {};
+  function storyImage(mk) {
+    var d = monthData(mk), sig = JSON.stringify([d.days, d.by, d.prs, d.medals.map(function (a) { return a.id; }), d.bw, d.next && [d.next.id, d.next.cur]]);
+    if (storyCache[mk] && storyCache[mk].sig === sig) return Promise.resolve(storyCache[mk].url);
+    var fontsReady = document.fonts && document.fonts.load ? Promise.all(['700 100px "Inter Tight"', '600 40px "Inter Tight"', '500 30px Inter', '600 30px Inter'].map(function (f) { return document.fonts.load(f).catch(function () {}); })) : Promise.resolve();
+    return fontsReady.then(function () {
+      return Promise.all(d.medals.slice(0, 4).map(function (a) { return svgImage(medalSVG(Object.assign({}, a, { id: a.id + "st" }), true), 240, 268); }));
+    }).then(function (imgs) {
+      var W = 1080, H = 1920, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+      var c = cv.getContext("2d"), MINT = "#2EE59D", FG = "#F1F2F1", MUTED = "#8A8C91", FAINT = "#55575C";
+      var DISP = '"Inter Tight", Inter, system-ui, sans-serif', BODY = "Inter, system-ui, sans-serif";
+      c.fillStyle = "#0E0E10"; c.fillRect(0, 0, W, H);
+      var g1 = c.createRadialGradient(540, 330, 0, 540, 330, 760); g1.addColorStop(0, "rgba(46,229,157,0.20)"); g1.addColorStop(1, "rgba(46,229,157,0)");
+      c.fillStyle = g1; c.fillRect(0, 0, W, H);
+      var g2 = c.createRadialGradient(980, 1700, 0, 980, 1700, 700); g2.addColorStop(0, "rgba(76,201,240,0.09)"); g2.addColorStop(1, "rgba(76,201,240,0)");
+      c.fillStyle = g2; c.fillRect(0, 0, W, H);
+      for (var gx = 18; gx < W; gx += 36) for (var gy = 18; gy < 700; gy += 36) {
+        var fade = Math.max(0, 1 - Math.hypot(gx - 160, gy - 120) / 700);
+        if (fade > 0) { c.fillStyle = "rgba(255,255,255," + (0.09 * fade).toFixed(3) + ")"; c.fillRect(gx, gy, 2.4, 2.4); }
+      }
+      function label(t, x, y, col, size, sp) { c.font = "700 " + (size || 28) + "px " + BODY; c.fillStyle = col || MINT; try { c.letterSpacing = (sp == null ? 6 : sp) + "px"; } catch (e) {} c.fillText(t, x, y); try { c.letterSpacing = "0px"; } catch (e) {} }
+      function panel(y, h) { rrect(c, 64, y, W - 128, h, 40); c.fillStyle = "rgba(255,255,255,0.035)"; c.fill(); c.lineWidth = 2; c.strokeStyle = "rgba(255,255,255,0.08)"; c.stroke(); }
+      c.textBaseline = "alphabetic"; c.textAlign = "left";
+      label("ALEX GYM", 90, 150, MINT, 30, 10);
+      label("MONATSRÜCKBLICK", 90, 200, MUTED, 26, 6);
+      c.font = "700 150px " + DISP; c.fillStyle = FG; c.shadowColor = "rgba(46,229,157,0.35)"; c.shadowBlur = 40;
+      c.fillText(monthLabel(d.mk, { month: "long" }), 84, 360); c.shadowBlur = 0;
+      c.font = "600 56px " + DISP; c.fillStyle = MUTED; c.fillText(d.mk.slice(0, 4), 90, 436);
+      // trainings
+      panel(500, 330);
+      c.font = "700 210px " + DISP; c.fillStyle = MINT; c.shadowColor = "rgba(46,229,157,0.6)"; c.shadowBlur = 50;
+      c.fillText(String(d.days), 110, 735); c.shadowBlur = 0;
+      var nw = c.measureText(String(d.days)).width;
+      c.font = "500 34px " + BODY; c.fillStyle = MUTED; c.fillText(d.days === 1 ? "Trainingstag" : "Trainingstage", 116, 790);
+      var gx2 = Math.max(130 + nw + 60, 520);
+      GROUPS.forEach(function (G, i) {
+        var yy = 620 + i * 78;
+        c.beginPath(); c.arc(gx2 + 12, yy - 14, 12, 0, Math.PI * 2); c.fillStyle = G.color; c.shadowColor = G.color; c.shadowBlur = 18; c.fill(); c.shadowBlur = 0;
+        c.font = "600 44px " + DISP; c.fillStyle = FG; c.fillText(G.name, gx2 + 44, yy);
+        c.textAlign = "right"; c.fillStyle = G.color; c.fillText(d.by[G.key] + "×", W - 110, yy); c.textAlign = "left";
+      });
+      // records
+      panel(870, 380);
+      label("NEUE REKORDE", 110, 940);
+      c.textAlign = "right"; c.font = "700 64px " + DISP; c.fillStyle = FG; c.fillText(String(d.prs.length), W - 110, 950); c.textAlign = "left";
+      if (d.prs.length) d.prs.slice(0, 4).forEach(function (p, i) {
+        var yy = 1025 + i * 62;
+        c.font = "500 38px " + BODY; c.fillStyle = FG; c.fillText(fitText(c, p.name, 520), 110, yy);
+        c.textAlign = "right"; c.font = "600 40px " + DISP; c.fillStyle = MINT; c.fillText(kg(p.kg) + " kg", W - 230, yy);
+        c.font = "500 30px " + BODY; c.fillStyle = MUTED; c.fillText(p.gain > 0 ? "+" + kg(p.gain) : "", W - 110, yy); c.textAlign = "left";
+      });
+      else { c.font = "500 36px " + BODY; c.fillStyle = MUTED; c.fillText("Kein neuer Rekord diesen Monat.", 110, 1040); c.fillText("Der nächste Monat gehört dir.", 110, 1094); }
+      // medals
+      panel(1290, 330);
+      label("NEUE MEDAILLEN", 110, 1360);
+      if (d.medals.length) {
+        var n = Math.min(4, d.medals.length), slot = (W - 220) / n;
+        d.medals.slice(0, n).forEach(function (a, i) {
+          var cx = 110 + slot * i + slot / 2;
+          if (imgs[i]) c.drawImage(imgs[i], cx - 92, 1376, 184, 206);
+          c.textAlign = "center"; c.font = "600 24px " + BODY; c.fillStyle = FG; c.fillText(fitText(c, a.name, slot - 16), cx, 1600); c.textAlign = "left";
+        });
+        if (d.medals.length > 4) { c.textAlign = "right"; c.font = "600 30px " + BODY; c.fillStyle = MUTED; c.fillText("+" + (d.medals.length - 4) + " weitere", W - 110, 1360); c.textAlign = "left"; }
+      } else if (d.next) {
+        c.font = "500 34px " + BODY; c.fillStyle = MUTED; c.fillText("Nächste Medaille", 110, 1430);
+        c.font = "600 46px " + DISP; c.fillStyle = FG; c.fillText(fitText(c, d.next.name, W - 240), 110, 1494);
+        var pct = Math.max(0, Math.min(1, d.next.cur / d.next.max));
+        rrect(c, 110, 1530, W - 220, 16, 8); c.fillStyle = "rgba(255,255,255,0.08)"; c.fill();
+        rrect(c, 110, 1530, Math.max(16, (W - 220) * pct), 16, 8); c.fillStyle = MINT; c.shadowColor = MINT; c.shadowBlur = 16; c.fill(); c.shadowBlur = 0;
+        c.font = "500 28px " + BODY; c.fillStyle = MUTED; c.fillText(Math.round(pct * 100) + " % geschafft", 110, 1590);
+      } else { c.font = "500 36px " + BODY; c.fillStyle = MUTED; c.fillText("Diesen Monat keine neue Medaille.", 110, 1450); }
+      // body weight
+      panel(1660, 190);
+      label("KÖRPERGEWICHT", 110, 1722);
+      if (d.bw.length) {
+        var f = d.bw[0].kg, l = d.bw[d.bw.length - 1].kg, dd = Math.round((l - f) * 10) / 10, dir = state.phase && state.phase.type;
+        var good = dir === "bulk" ? dd >= 0 : dir === "cut" ? dd <= 0 : Math.abs(dd) <= 0.5;
+        c.font = "600 50px " + DISP; c.fillStyle = FG; c.fillText(kg(f) + " → " + kg(l) + " kg", 110, 1800);
+        c.font = "600 36px " + DISP; c.fillStyle = dd === 0 ? MUTED : good ? MINT : "#EFA661"; c.fillText((dd > 0 ? "↗ " : dd < 0 ? "↘ " : "→ ") + signed(dd) + " kg", 110, 1842);
+        if (d.bw.length > 1) {
+          var xs0 = 640, xs1 = W - 110, ys0 = 1700, ys1 = 1830, lo = Math.min.apply(null, d.bw.map(function (e) { return e.kg; })), hi = Math.max.apply(null, d.bw.map(function (e) { return e.kg; })), rg = hi - lo || 1;
+          c.beginPath();
+          d.bw.forEach(function (e, i) { var px = xs0 + (xs1 - xs0) * i / (d.bw.length - 1), py = ys1 - (e.kg - lo) / rg * (ys1 - ys0); if (i) c.lineTo(px, py); else c.moveTo(px, py); });
+          c.lineWidth = 6; c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = MINT; c.shadowColor = MINT; c.shadowBlur = 18; c.stroke(); c.shadowBlur = 0;
+        }
+      } else { c.font = "500 34px " + BODY; c.fillStyle = MUTED; c.fillText("Keine Einträge in diesem Monat.", 110, 1800); }
+      c.textAlign = "center"; c.font = "500 24px " + BODY; c.fillStyle = FAINT; c.fillText("alex gym · " + monthLabel(d.mk), W / 2, 1896); c.textAlign = "left";
+      var url = cv.toDataURL("image/png");
+      storyCache[mk] = { sig: sig, url: url };
+      return url;
+    });
+  }
+  function openStory(mk) {
+    $("story-img").removeAttribute("src");
+    $("story-title").textContent = monthLabel(mk);
+    $("story").hidden = false; $("story").dataset.mk = mk;
+    storyImage(mk).then(function (url) { if ($("story").dataset.mk === mk) $("story-img").src = url; });
+  }
+  function closeStory() { $("story").hidden = true; }
+  $("story-close").addEventListener("click", closeStory);
+  $("story").addEventListener("click", function (e) { if (e.target === $("story")) closeStory(); });
+  $("story-save").addEventListener("click", function () {
+    var mk = $("story").dataset.mk;
+    storyImage(mk).then(function (url) {
+      var a = document.createElement("a"); a.href = url; a.download = "alex-gym-" + mk + ".png";
+      document.body.appendChild(a); a.click(); a.remove();
+    });
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("story").hidden) closeStory(); });
+  document.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-story]"); if (b) openStory(b.dataset.story); });
+  var kabToken = 0;
+  function renderKabinett() {
+    if (document.body.getAttribute("data-tab") !== "erfolge") return;
+    var months = storyMonths(), cur = todayISO().slice(0, 7);
+    if (!changed("kab", [months, state.rot, state.lifts, state.bw, state.exercises, state.phasesDone])) return;
+    if (!months.length) { $("kab-grid").innerHTML = '<div class="empty">Sobald du trainierst, entsteht hier jeden Monat ein Rückblick.</div>'; return; }
+    $("kab-grid").innerHTML = months.map(function (mk) {
+      return '<button type="button" class="kab-item" data-story="' + mk + '"><span class="kab-thumb" id="kab-' + mk + '"></span><b>' + esc(monthLabel(mk, { month: "long" })) + "</b><span>" + mk.slice(0, 4) + (mk === cur ? " · läuft noch" : "") + "</span></button>";
+    }).join("");
+    var tok = ++kabToken, p = Promise.resolve();
+    months.forEach(function (mk) {
+      p = p.then(function () {
+        if (tok !== kabToken) return;
+        return storyImage(mk).then(function (url) { var el = $("kab-" + mk); if (el) el.style.backgroundImage = "url(" + url + ")"; });
+      });
+    });
+  }
+
   function renderExercises() {
     if (!changed("ex", [state.exercises, state.lifts, state.rot, ui.open, ui.groupOpen, todayISO()])) return;
     var list = $("ex-list");
@@ -1804,7 +2001,7 @@ body.chart-open { padding-bottom: 32px; }
     if (!wins.length) { el.hidden = true; return; }
     el.hidden = false;
     el.innerHTML = '<div class="rv-head"><div><div class="label">Monatsrückblick</div><h2>Dein ' + esc(monthName) + "</h2></div>" +
-      '<button class="btn-dark btn-sm" type="button" data-review-hide="' + key + '">Ausblenden</button></div>' +
+      '<span style="display:flex;gap:6px"><button class="btn-dark btn-sm" type="button" data-story="' + key + '">Story ansehen</button><button class="btn-dark btn-sm" type="button" data-review-hide="' + key + '">Ausblenden</button></span></div>' +
       '<div class="rv-grid">' + wins.map(function (w) {
         return '<div class="rv-tile"><div class="rv-big ' + w.cls + '">' + w.big + '</div><div class="rv-label">' + esc(w.label) + "</div>" +
           (w.list ? '<ul class="rv-list">' + w.list.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>" : "") + "</div>";
@@ -1981,7 +2178,7 @@ body.chart-open { padding-bottom: 32px; }
   document.body.setAttribute("data-tab", ui.tab);
   document.querySelectorAll("[data-tab-btn]").forEach(function (b) { if (b.dataset.tabBtn === ui.tab) b.setAttribute("aria-current", "page"); });
 
-  function render() { if (ui.page) renderChartPage(); else { renderReview(); renderRotation(); renderRotHistory(); renderCalendar(); renderWeekGoal(); renderWeighHint(); maybeBackup(); renderPhase(); renderBw(); renderExercises(); renderMilestones(); renderAchievements(); renderPhotos(); } }
+  function render() { if (ui.page) renderChartPage(); else { renderReview(); renderRotation(); renderRotHistory(); renderCalendar(); renderWeekGoal(); renderWeighHint(); maybeBackup(); renderPhase(); renderBw(); renderExercises(); renderMilestones(); renderAchievements(); renderKabinett(); renderPhotos(); } }
 
   // ---------- rest timer ----------
   var timer = lsGet("gymlog.timer") || { endAt: 0, total: 210, label: "", doneAt: 0 };
