@@ -311,6 +311,23 @@ button.rot-chip:active { transform: scale(0.98); }
 .rot-chip.today { border-color: var(--accent); background: rgba(46,229,157,0.12); box-shadow: 0 0 0 1px var(--accent), 0 0 22px -8px var(--accent-glow); }
 .rot-chip.today b { color: var(--accent-2); }
 .rot-chip span.rot-up { color: var(--accent-2); font-weight: 500; }
+.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+@media (max-width: 520px) { .ach-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
+.ach { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 14px 10px 14px; border-radius: 16px; border: 1px solid var(--line); background: rgba(255,255,255,0.02); min-width: 0; }
+.ach svg { width: 92px; height: auto; display: block; margin-bottom: 6px; filter: drop-shadow(0 8px 14px rgba(0,0,0,0.55)); }
+.ach.on { border-color: rgba(255,255,255,0.10); background: radial-gradient(120% 70% at 50% 20%, rgba(46,229,157,0.07), transparent 70%), rgba(255,255,255,0.02); }
+.ach.on svg { filter: drop-shadow(0 8px 14px rgba(0,0,0,0.55)) drop-shadow(0 0 14px rgba(46,229,157,0.22)); }
+.ach.locked svg { filter: grayscale(1) brightness(0.62) contrast(1.05); opacity: 0.8; }
+.ach-name { font-size: 13.5px; font-weight: 600; line-height: 1.25; }
+.ach.locked .ach-name { color: var(--muted); }
+.ach-desc { font-size: 11.5px; color: var(--faint); line-height: 1.35; }
+.ach-when { font-size: 11.5px; color: var(--accent-2); margin-top: 4px; }
+.ach-prog { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ach-bar { width: 80%; height: 4px; border-radius: 4px; background: rgba(255,255,255,0.07); margin-top: 6px; overflow: hidden; }
+.ach-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #22C285, var(--accent)); }
+.ach.fresh { animation: achpop 1.4s ease-out 1; }
+@keyframes achpop { 0% { transform: scale(0.85); box-shadow: 0 0 0 1px var(--accent), 0 0 40px -4px var(--accent-glow); } 40% { transform: scale(1.04); } 100% { transform: scale(1); box-shadow: none; } }
+@media (prefers-reduced-motion: reduce) { .ach.fresh { animation: none; } }
 .rot-hist { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
 .rot-hist #rot-hist-body { margin-top: 10px; }
 .rot-hist form { margin-top: 12px; }
@@ -501,7 +518,7 @@ body.chart-open { padding-bottom: 32px; }
           <button type="button" class="menu-item" id="m-import">Daten importieren</button>
           <button type="button" class="menu-item" id="m-export">Backup herunterladen</button>
           <button type="button" class="menu-item danger" id="m-logout">Abmelden</button>
-          <div class="menu-ver">Version 20 · 13.11.2026</div>
+          <div class="menu-ver">Version 21 · 13.11.2026</div>
         </div>
       </details>
       <input type="file" id="import-file" accept="application/json,.json" hidden>
@@ -634,6 +651,15 @@ body.chart-open { padding-bottom: 32px; }
     </div>
   </section>
 
+  <!-- Achievements -->
+  <section class="card" id="ach-card" aria-labelledby="ach-h" data-tabs="home ziele">
+    <div class="card-head">
+      <span class="label" id="ach-h">Erfolge</span>
+      <span class="sub" id="ach-count" style="font-size:12px"></span>
+    </div>
+    <div class="ach-grid" id="ach-grid"></div>
+  </section>
+
   <!-- Progress photos -->
   <section class="card" id="ph-card" aria-labelledby="ph-h" data-tabs="home fotos">
     <div class="card-head">
@@ -702,7 +728,7 @@ body.chart-open { padding-bottom: 32px; }
 (function () {
   "use strict";
   var DAY = 86400000;
-  var state = { exercises: [], lifts: [], bw: [], milestones: [], photos: [], phase: null, rot: [] };
+  var state = { exercises: [], lifts: [], bw: [], milestones: [], photos: [], phase: null, rot: [], phasesDone: [] };
   function lsGet(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   var ui = { open: null, editingPhase: false, exDetails: {}, groupOpen: lsGet("gymlog.groups") || {}, msOpen: lsGet("gymlog.msOpen") !== false, timerVisible: true };
@@ -1081,6 +1107,175 @@ body.chart-open { padding-bottom: 32px; }
     return nx ? (r.today ? "Heute " : "Start: ") + nx.name + " · " : "";
   }
 
+  // ---------- achievements ----------
+  // "Maxxed Out" = the machine's top weight. Change kg here if a machine goes higher or lower.
+  var ACH_MAX = [
+    { id: "max-brust", name: "Brustpresse", re: /brustpresse/i, kg: 100, group: "push", icon: "press" },
+    { id: "max-fly", name: "Butterfly", re: /butterfly/i, kg: 85, group: "push", icon: "fly" },
+    { id: "max-seit", name: "Seitheben", re: /seitheben/i, kg: 70, group: "push", icon: "lateral" },
+    { id: "max-lat", name: "Latzug", re: /latzug/i, kg: 100, group: "pull", icon: "lat" },
+    { id: "max-breit", name: "Breites Rudern", re: /breit/i, kg: 65, group: "pull", icon: "widerow" },
+    { id: "max-rudern", name: "Rudern", re: /^(?!.*breit).*rudern/i, kg: 100, group: "pull", icon: "row" },
+    { id: "max-beinpresse", name: "Beinpresse", re: /^(?!.*wade).*beinpresse/i, kg: 200, group: "legs", icon: "legpress" },
+    { id: "max-waden", name: "Waden", re: /wade/i, kg: 200, group: "legs", icon: "calf" },
+    { id: "max-curl", name: "Beinbeuger", re: /leg ?curl|beinbeuger/i, kg: 80, group: "legs", icon: "hamstring" }
+  ];
+  var GYM_YEAR = "2027-03-09", GYM_START = "2026-03-09";
+  var METALS = {
+    push:     ["#EFFFF8", "#8CF7CC", "#1FA673", "#0A4430"],
+    pull:     ["#EEFAFF", "#8CDDF7", "#2286AD", "#0A3546"],
+    legs:     ["#F8FFE8", "#D2F57F", "#7FA42E", "#2F410C"],
+    gold:     ["#FFF8DC", "#F4D27A", "#B8862A", "#4A3209"],
+    platinum: ["#FFFFFF", "#DCE1E8", "#8C96A2", "#363C45"],
+    royal:    ["#F6F0FF", "#C3AEFF", "#6E55C9", "#261857"],
+    bronze:   ["#FFEBDD", "#EBA676", "#A35E2A", "#40200A"],
+    ice:      ["#F4FCFF", "#C6EBFF", "#6AA9D2", "#1E3E57"]
+  };
+  // simple line pictograms, drawn in a 40x40 box centred on 0,0
+  var ACH_ICONS = {
+    press: '<path d="M-14 -8v16M14 -8v16M-18 -4v8M18 -4v8M-14 0h28"/><path d="M-4 -12l4 -4 4 4" />',
+    fly: '<path d="M-3 -10c-10 0 -15 6 -15 14M3 -10c10 0 15 6 15 14"/><path d="M-6 8l6 -6 6 6"/><circle cx="0" cy="-14" r="3"/>',
+    lateral: '<circle cx="0" cy="-12" r="3.5"/><path d="M0 -7v14M0 7l-6 10M0 7l6 10M-17 -6l17 3 17 -3"/>',
+    lat: '<path d="M-17 -14h34M-17 -14l4 -4M17 -14l-4 -4M0 -14v6"/><circle cx="0" cy="-3" r="3"/><path d="M0 1v9M-8 -9l8 7 8 -7"/><path d="M-5 16l5 -5 5 5"/>',
+    widerow: '<path d="M-18 -4h12M6 -4h12M-18 -4v8M18 -4v8"/><path d="M-11 6l-5 -5M11 6l5 -5"/><path d="M-4 10h8M0 10v-14"/>',
+    row: '<path d="M-6 -6l6 8 6 -8z"/><path d="M0 2v10"/><path d="M-16 8h-4M-14 4l-6 4 6 4M16 8h4"/>',
+    legpress: '<path d="M-16 14l26 -26"/><path d="M4 -16l10 10"/><path d="M-12 4l10 -2 4 8"/><circle cx="-14" cy="0" r="3"/>',
+    calf: '<path d="M-14 12h28"/><path d="M-6 12v-6l4 -14h6l-2 14 6 6"/><path d="M12 -6v-8M9 -11l3 -3 3 3"/>',
+    hamstring: '<path d="M-16 4h12l8 -10 8 6"/><circle cx="-18" cy="-2" r="3"/><path d="M-16 12h32"/><path d="M12 0c4 4 4 8 0 12"/>',
+    year: '<text x="0" y="6" text-anchor="middle" font-size="22" font-weight="800" font-family="Inter Tight, Inter, sans-serif" stroke="none" fill="currentColor">365</text><text x="0" y="17" text-anchor="middle" font-size="6.5" font-weight="700" letter-spacing="1.6" font-family="Inter, sans-serif" stroke="none" fill="currentColor">TAGE</text>',
+    rotation: '<path d="M12 -8a14 14 0 0 0 -24 2"/><path d="M-12 8a14 14 0 0 0 24 -2"/><path d="M-14 -11v6h6M14 11v-6h-6"/><text x="0" y="4" text-anchor="middle" font-size="10" font-weight="800" font-family="Inter, sans-serif" stroke="none" fill="currentColor">25</text>',
+    phases: '<path d="M-12 8l12 -8 12 8M-12 0l12 -8 12 8M-12 -8l12 -8 12 8"/>',
+    bulk: '<path d="M0 -16v28M-9 -7l9 -9 9 9"/><path d="M-14 16h28"/>',
+    cut: '<path d="M-10 14l18 -30 4 2 -12 30z"/><path d="M-12 -10l6 0M-14 -2l6 0"/>'
+  };
+  function medalSVG(a, on) {
+    var m = METALS[a.metal], id = "md" + a.id.replace(/[^a-z0-9]/gi, ""), shape = a.shape;
+    var defs = '<defs><linearGradient id="' + id + 'g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + m[0] + '"/><stop offset=".32" stop-color="' + m[1] + '"/><stop offset=".68" stop-color="' + m[2] + '"/><stop offset="1" stop-color="' + m[3] + '"/></linearGradient>' +
+      '<linearGradient id="' + id + 'r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + m[2] + '"/><stop offset="1" stop-color="' + m[3] + '"/></linearGradient>' +
+      '<radialGradient id="' + id + 'f" cx=".5" cy=".3" r=".75"><stop offset="0" stop-color="#26262B"/><stop offset="1" stop-color="#0D0D0F"/></radialGradient>' +
+      '<linearGradient id="' + id + 's" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>' +
+      '<filter id="' + id + 'w" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
+    var G = "url(#" + id + "g)", R = "url(#" + id + "r)", F = "url(#" + id + "f)", S = "url(#" + id + "s)";
+    // ribbon behind the medal
+    var ribbon = '<path d="M38 4h18l10 40h-18z" fill="' + R + '"/><path d="M82 4h-18l-10 40h18z" fill="' + m[3] + '"/><path d="M47 4h4l9 36h-4z" fill="' + m[1] + '" opacity=".55"/>';
+    var body = "", face = 36, cx = 60, cy = 80;
+    function poly(n, r1, r2, rot) {
+      var pts = [];
+      for (var i = 0; i < n * (r2 ? 2 : 1); i++) {
+        var r = r2 && i % 2 ? r2 : r1, t = (rot || 0) + i * Math.PI * 2 / (n * (r2 ? 2 : 1));
+        pts.push((cx + r * Math.sin(t)).toFixed(1) + "," + (cy - r * Math.cos(t)).toFixed(1));
+      }
+      return pts.join(" ");
+    }
+    if (shape === "plate") {
+      // a weight plate: notched metal rim with the machine's max on it
+      var notches = "";
+      for (var i = 0; i < 28; i++) notches += '<rect x="' + (cx - 1.4) + '" y="' + (cy - 47) + '" width="2.8" height="5" rx="1" fill="' + m[3] + '" opacity=".55" transform="rotate(' + (i * 360 / 28) + " " + cx + " " + cy + ')"/>';
+      body = '<circle cx="60" cy="80" r="46" fill="' + G + '"/>' + notches +
+        '<circle cx="60" cy="80" r="41" fill="none" stroke="' + m[0] + '" stroke-opacity=".5" stroke-width="1"/>' +
+        '<path id="' + id + 'p" d="M24 80a36 36 0 0 0 72 0" fill="none"/>' +
+        '<text font-size="8.5" font-weight="800" letter-spacing="1.6" fill="' + m[3] + '" font-family="Inter, sans-serif"><textPath href="#' + id + 'p" startOffset="50%" text-anchor="middle">' + a.kg + ' KG</textPath></text>';
+      face = 29;
+    } else if (shape === "laurel") {
+      var leaves = "";
+      for (var k = 0; k < 9; k++) {
+        var ang = 112 + k * 17, rad = ang * Math.PI / 180, lx = cx + 49 * Math.cos(rad), ly = cy + 49 * Math.sin(rad);
+        leaves += '<ellipse cx="' + lx.toFixed(1) + '" cy="' + ly.toFixed(1) + '" rx="3.4" ry="8" fill="' + G + '" transform="rotate(' + (ang + 90 - 25) + " " + lx.toFixed(1) + " " + ly.toFixed(1) + ')"/>';
+        var ang2 = 68 - k * 17, rad2 = ang2 * Math.PI / 180, rx2 = cx + 49 * Math.cos(rad2), ry2 = cy + 49 * Math.sin(rad2);
+        leaves += '<ellipse cx="' + rx2.toFixed(1) + '" cy="' + ry2.toFixed(1) + '" rx="3.4" ry="8" fill="' + G + '" transform="rotate(' + (ang2 + 90 + 25) + " " + rx2.toFixed(1) + " " + ry2.toFixed(1) + ')"/>';
+      }
+      body = leaves + '<polygon points="' + poly(12, 44, 38) + '" fill="' + G + '"/><circle cx="60" cy="80" r="37" fill="none" stroke="' + m[0] + '" stroke-opacity=".6"/>';
+      face = 31;
+    } else if (shape === "octa") {
+      body = '<polygon points="' + poly(8, 46, 0, Math.PI / 8) + '" fill="' + G + '"/><polygon points="' + poly(8, 40, 0, Math.PI / 8) + '" fill="none" stroke="' + m[0] + '" stroke-opacity=".55"/>';
+      face = 32;
+    } else if (shape === "shield") {
+      body = '<path d="M60 32l38 12v28c0 26 -17 42 -38 50c-21 -8 -38 -24 -38 -50v-28z" fill="' + G + '"/><path d="M60 39l31 10v23c0 21 -14 35 -31 42c-17 -7 -31 -21 -31 -42v-23z" fill="none" stroke="' + m[0] + '" stroke-opacity=".55"/>';
+      face = 26; cy = 78;
+    } else if (shape === "hex") {
+      body = '<polygon points="' + poly(6, 47) + '" fill="' + G + '"/><polygon points="' + poly(6, 41) + '" fill="none" stroke="' + m[0] + '" stroke-opacity=".55"/>';
+      face = 32;
+    } else if (shape === "diamond") {
+      body = '<polygon points="' + poly(4, 50) + '" fill="' + G + '"/><polygon points="' + poly(4, 43) + '" fill="none" stroke="' + m[0] + '" stroke-opacity=".55"/>';
+      face = 27;
+    }
+    var faceEl = '<circle cx="' + cx + '" cy="' + cy + '" r="' + face + '" fill="' + F + '" stroke="' + m[2] + '" stroke-width="1.5"/>';
+    var icon = '<g transform="translate(' + cx + " " + cy + ') scale(' + (face / 30).toFixed(2) + ')" fill="none" stroke="' + m[1] + '" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="color:' + m[1] + '"' + (on ? ' filter="url(#' + id + 'w)"' : "") + ">" + ACH_ICONS[a.icon] + "</g>";
+    var shine = '<ellipse cx="' + (cx - 10) + '" cy="' + (cy - 30) + '" rx="30" ry="12" fill="' + S + '" opacity=".5" transform="rotate(-18 ' + cx + " " + cy + ')"/>';
+    return '<svg viewBox="0 0 120 134" aria-hidden="true">' + defs + ribbon + body + faceEl + icon + shine + "</svg>";
+  }
+  function phaseDoneId(p) { return "done:" + p.type + ":" + p.start; }
+  function recordPhaseDone(p) {
+    if (!p || !p.end || !p.start || !backend || todayISO() < p.end) return;
+    if (mem.phase && mem.phase[phaseDoneId(p)]) return;
+    backend.put("phase", phaseDoneId(p), { type: p.type, start: p.start, end: p.end, createdAt: Date.now() });
+  }
+  function achievements() {
+    var today = todayISO(), out = [];
+    // long-term ones first
+    var dYear = Math.round((parseISO(today) - parseISO(GYM_START)) / DAY);
+    out.push({ id: "year", name: "Ein Jahr Eisen", desc: "Ein Jahr im Gym, seit dem 09.03.2026", metal: "gold", shape: "laurel", icon: "year",
+      done: today >= GYM_YEAR ? GYM_YEAR : "", cur: Math.min(365, Math.max(0, dYear)), max: 365, unit: "Tage" });
+    // rotation veteran: 25 full rounds in push and in pull (a round = every start once)
+    var counts = { push: {}, pull: {} }, vetDate = "", rounds = function (g) { return Math.min.apply(null, ROTATION[g].map(function (sl) { return counts[g][sl.key] || 0; })); };
+    state.rot.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }).forEach(function (r) {
+      if (!counts[r.group]) return;
+      counts[r.group][r.slot] = (counts[r.group][r.slot] || 0) + 1;
+      if (!vetDate && rounds("push") >= 25 && rounds("pull") >= 25) vetDate = r.date;
+    });
+    out.push({ id: "rotation", name: "Rotations-Veteran", desc: "25 komplette Rotationen bei Push und Pull", metal: "platinum", shape: "octa", icon: "rotation",
+      done: vetDate, cur: Math.min(rounds("push"), rounds("pull")), max: 25, unit: "Runden" });
+    var fin = state.phasesDone.slice().sort(function (a, b) { return a.end < b.end ? -1 : 1; });
+    var cb = fin.filter(function (p) { return p.type === "cut" || p.type === "bulk"; });
+    out.push({ id: "phases", name: "Phasenmeister", desc: "Drei Cut- oder Bulk-Phasen bis zum Ende durchgezogen", metal: "royal", shape: "shield", icon: "phases",
+      done: cb.length >= 3 ? cb[2].end : "", cur: Math.min(3, cb.length), max: 3, unit: "Phasen" });
+    var fb = fin.filter(function (p) { return p.type === "bulk"; })[0], fc = fin.filter(function (p) { return p.type === "cut"; })[0];
+    var curP = state.phase, pLeft = function (t) { return curP && curP.type === t && curP.end > today ? Math.max(0, Math.round((parseISO(curP.end) - parseISO(today)) / DAY)) : null; };
+    out.push({ id: "bulk1", name: "Masse-Macher", desc: "Deinen ersten Bulk abgeschlossen", metal: "bronze", shape: "hex", icon: "bulk",
+      done: fb ? fb.end : "", hint: pLeft("bulk") != null ? "Noch " + pLeft("bulk") + " Tage im Bulk" : "Starte und beende einen Bulk" });
+    out.push({ id: "cut1", name: "Messerscharf", desc: "Deinen ersten Cut abgeschlossen", metal: "ice", shape: "diamond", icon: "cut",
+      done: fc ? fc.end : "", hint: pLeft("cut") != null ? "Noch " + pLeft("cut") + " Tage im Cut" : "Starte und beende einen Cut" });
+    // machine max weights
+    ACH_MAX.forEach(function (a) {
+      var ids = state.exercises.filter(function (ex) { return a.re.test(ex.name); }).map(function (ex) { return ex.id; });
+      var best = 0, first = "";
+      state.lifts.filter(function (l) { return ids.indexOf(l.exerciseId) >= 0; }).sort(function (x, y) { return x.date < y.date ? -1 : 1; }).forEach(function (l) {
+        if (l.weight > best) best = l.weight;
+        if (!first && l.weight >= a.kg) first = l.date;
+      });
+      out.push({ id: a.id, name: a.name + " Maxxed Out", desc: "Maximalgewicht an der Maschine: " + a.kg + " kg", metal: a.group, shape: "plate", icon: a.icon, kg: a.kg,
+        done: first, cur: Math.min(a.kg, best), max: a.kg, unit: "kg", missing: !ids.length });
+    });
+    return out;
+  }
+  function renderAchievements() {
+    recordPhaseDone(state.phase);
+    if (!changed("ach", [state.lifts, state.exercises, state.rot, state.phasesDone, state.phase, todayISO()])) return;
+    var list = achievements(), got = list.filter(function (a) { return a.done; });
+    $("ach-count").textContent = got.length + " / " + list.length;
+    // celebrate newly unlocked ones (not on the very first load)
+    var seen = lsGet("gymlog.achSeen"), fresh = [];
+    if (state.exercises.length) {   // only once real data is loaded, so an empty start never looks like "new"
+      if (seen) got.forEach(function (a) { if (seen.indexOf(a.id) < 0) fresh.push(a.id); });
+      lsSet("gymlog.achSeen", got.map(function (a) { return a.id; }));
+    }
+    $("ach-grid").innerHTML = list.map(function (a) {
+      var on = !!a.done, sub;
+      if (on) sub = '<span class="ach-when">Freigeschaltet am ' + fmtNum(a.done) + "</span>";
+      else if (a.missing) sub = '<span class="ach-prog">Übung fehlt noch in deiner Liste</span>';
+      else if (a.max) {
+        var pct = Math.max(0, Math.min(100, a.cur / a.max * 100));
+        sub = '<span class="ach-bar"><i style="width:' + pct.toFixed(1) + '%"></i></span><span class="ach-prog">' + (a.unit === "kg" ? kg(a.cur, 1) + " / " + a.max + " kg" : a.unit === "Tage" ? "Noch " + (a.max - a.cur) + " Tage" : a.cur + " / " + a.max + " " + a.unit) + "</span>";
+      } else sub = '<span class="ach-prog">' + esc(a.hint || "") + "</span>";
+      return '<div class="ach' + (on ? " on" : " locked") + (fresh.indexOf(a.id) >= 0 ? " fresh" : "") + '" title="' + esc(a.desc) + '">' + medalSVG(a, on) +
+        '<b class="ach-name">' + esc(a.name) + '</b><span class="ach-desc">' + esc(a.desc) + "</span>" + sub + "</div>";
+    }).join("");
+    if (fresh.length) {
+      var f = list.filter(function (a) { return a.id === fresh[0]; })[0];
+      toast("Erfolg freigeschaltet: " + f.name + (fresh.length > 1 ? " (+" + (fresh.length - 1) + ")" : ""), true);
+    }
+  }
+
   function renderExercises() {
     if (!changed("ex", [state.exercises, state.lifts, state.rot, ui.open, ui.groupOpen, todayISO()])) return;
     var list = $("ex-list");
@@ -1362,7 +1557,7 @@ body.chart-open { padding-bottom: 32px; }
   document.body.setAttribute("data-tab", ui.tab);
   document.querySelectorAll("[data-tab-btn]").forEach(function (b) { if (b.dataset.tabBtn === ui.tab) b.setAttribute("aria-current", "page"); });
 
-  function render() { if (ui.page) renderChartPage(); else { renderReview(); renderRotation(); renderRotHistory(); renderPhase(); renderBw(); renderExercises(); renderMilestones(); renderPhotos(); } }
+  function render() { if (ui.page) renderChartPage(); else { renderReview(); renderRotation(); renderRotHistory(); renderPhase(); renderBw(); renderExercises(); renderMilestones(); renderAchievements(); renderPhotos(); } }
 
   // ---------- rest timer ----------
   var timer = lsGet("gymlog.timer") || { endAt: 0, total: 210, label: "", doneAt: 0 };
@@ -1606,6 +1801,7 @@ body.chart-open { padding-bottom: 32px; }
     var data = { type: type, start: start, end: end, updatedAt: Date.now() };
     if (!isNaN(target)) data.target = target;
     ui.editingPhase = false;
+    recordPhaseDone(state.phase);
     write(function () { return backend.setPhase(data); }, "Phase gespeichert");
   });
 
@@ -1820,6 +2016,7 @@ body.chart-open { padding-bottom: 32px; }
     state.milestones = arr(mem.milestones); state.photos = arr(mem.photos); state.phase = (mem.phase && mem.phase.current) || null;
     // start-rotation picks live next to the phase as "rot:<group>:<date>" docs
     state.rot = Object.keys(mem.phase || {}).filter(function (k) { return k.indexOf("rot:") === 0; }).map(function (k) { return Object.assign({ id: k }, mem.phase[k]); });
+    state.phasesDone = Object.keys(mem.phase || {}).filter(function (k) { return k.indexOf("done:") === 0; }).map(function (k) { return Object.assign({ id: k }, mem.phase[k]); });
     if (userId) lsSet(CACHE, { uid: userId, mem: mem });
     render();
   }
@@ -1946,7 +2143,7 @@ body.chart-open { padding-bottom: 32px; }
         (d[c] || []).forEach(function (x) { var data = Object.assign({}, x); delete data.id; rows.push({ user_id: userId, collection: c, id: String(x.id), data: data }); });
       });
       if (d.phase) rows.push({ user_id: userId, collection: "phase", id: "current", data: d.phase });
-      (d.rotation || []).forEach(function (r) { if (r && /^rot:/.test(r.id)) { var data = Object.assign({}, r); delete data.id; rows.push({ user_id: userId, collection: "phase", id: r.id, data: data }); } });
+      (d.rotation || []).concat(d.phasesDone || []).forEach(function (r) { if (r && /^(rot|done):/.test(r.id)) { var data = Object.assign({}, r); delete data.id; rows.push({ user_id: userId, collection: "phase", id: r.id, data: data }); } });
       var photos = d.photos || [], done = 0, total = rows.length + photos.length;
       function progress() { setStatus("Import " + Math.round(done / Math.max(1, total) * 100) + " %", false); }
       progress();
@@ -1979,6 +2176,7 @@ body.chart-open { padding-bottom: 32px; }
     ["exercises", "lifts", "bodyweight", "milestones"].forEach(function (c) { out[c] = Object.keys(mem[c] || {}).map(function (id) { return Object.assign({ id: id }, mem[c][id]); }); });
     out.phase = (mem.phase && mem.phase.current) || null;
     out.rotation = state.rot.map(function (r) { return Object.assign({}, r); });
+    out.phasesDone = state.phasesDone.map(function (r) { return Object.assign({}, r); });
     var photos = Object.keys(mem.photos || {}).map(function (id) { return Object.assign({ id: id }, mem.photos[id]); });
     toast("Backup wird erstellt …");
     var p = Promise.resolve(), list = [];
